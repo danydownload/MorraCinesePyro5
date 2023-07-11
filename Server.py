@@ -43,15 +43,17 @@ class GameServer(object):
                 self.results[game_id][self.players[game_id][0]] = "Draw"
                 self.results[game_id][self.players[game_id][1]] = "Draw"
             elif (move_1, move_2) in [("scissors", "rock"), ("paper", "scissors"), ("rock", "paper")]:
-                print(f"{self.players[game_id][0]} wins")
-                self.results[game_id][self.players[game_id][1]] = "Loser"
-                self.results[game_id][self.players[game_id][0]] = "Winner"
-                self.scores[self.players[game_id][0]] += 1  # Increase the score of the winner
-            else:
+                #print('player 1 wins')
                 print(f"{self.players[game_id][1]} wins")
-                self.results[game_id][self.players[game_id][1]] = "Winner"
                 self.results[game_id][self.players[game_id][0]] = "Loser"
+                self.results[game_id][self.players[game_id][1]] = "Winner"
                 self.scores[self.players[game_id][1]] += 1  # Increase the score of the winner
+            else:
+                #print('player 0 wins')
+                print(f"{self.players[game_id][0]} wins")
+                self.results[game_id][self.players[game_id][0]] = "Winner"
+                self.results[game_id][self.players[game_id][1]] = "Loser"
+                self.scores[self.players[game_id][0]] += 1  # Increase the score of the winner
         return True
 
 
