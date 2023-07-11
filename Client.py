@@ -22,15 +22,26 @@ class GameClient(object):
         self.result_label = tk.Label(self.root)
         self.result_label.pack()
 
-    def make_choice(self, choice):
-        result = self.server.make_choice(self.game_id, self.player_name, choice)
-        if result:
-            self.show_winner()
-        else:
-            messagebox.showinfo("Waiting", "Waiting for the other player to make a move.")
+        self.player_label = tk.Label(self.root, text=f"Player: {self.player_name}")
+        self.player_label.pack()
 
-    def show_winner(self):
+        self.opponent_choice = None
+
+    def make_choice(self, choice):
+        if self.opponent_choice is None:
+            messagebox.showinfo("Waiting", "Waiting for the other player to make a move.")
+        else:
+            self.server.make_choice(self.game_id, self.player_name, choice)
+            self.check_winner()
+
+    def check_winner(self):
         winner = self.server.determine_winner(self.game_id)
+        if winner == "Waiting for the other player to make a move.":
+            messagebox.showinfo("Waiting", winner)
+        elif winner:
+            self.show_winner(winner)
+
+    def show_winner(self, winner):
         if winner == "Draw":
             text = "It's a draw."
         elif winner == self.player_name:
@@ -38,6 +49,9 @@ class GameClient(object):
         else:
             text = "You lose!"
         self.result_label.config(text=text)
+
+    def set_opponent_choice(self, choice):
+        self.opponent_choice = choice
 
 
 def main():
