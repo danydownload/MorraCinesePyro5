@@ -36,10 +36,13 @@ class GameServer(object):
             move_1, move_2 = self.moves[game_id].values()
             del self.moves[game_id]  # Reset the moves for this game_id
             if move_1 == move_2:
+                print("Draw")
                 return "Draw"
             elif (move_1, move_2) in [("rock", "scissors"), ("scissors", "paper"), ("paper", "rock")]:
+                print(f"{self.players[game_id][0]} wins")
                 return self.players[game_id]  # return the list of players
             else:
+                print(f"{self.players[game_id][1]} wins")
                 return list(reversed(self.players[game_id]))  # return the reversed list of players
         return False
 
