@@ -7,6 +7,7 @@ class GameServer(object):
         self.players = defaultdict(list)  # keep track of players for each game
         self.moves = defaultdict(dict)  # keep track of moves for each game
         self.results = defaultdict(dict)  # keep track of results for each game
+        self.scores = defaultdict(int)  # keep track of scores for each player
         self.game_count = 0
 
     def register(self, name):
@@ -34,24 +35,25 @@ class GameServer(object):
         print(self.moves[game_id])
         if game_id in self.moves and len(self.moves[game_id]) == 2:
             print(f"Partita {game_id} - Determining winner")
+            print(f'mosse: {self.moves[game_id]}')
             move_1, move_2 = self.moves[game_id].values()
             del self.moves[game_id]  # Reset the moves for this game_id
             if move_1 == move_2:
                 print("Draw")
                 self.results[game_id][self.players[game_id][0]] = "Draw"
                 self.results[game_id][self.players[game_id][1]] = "Draw"
-                return "Draw"
-            elif (move_1, move_2) in [("rock", "scissors"), ("scissors", "paper"), ("paper", "rock")]:
+            elif (move_1, move_2) in [("scissors", "rock"), ("paper", "scissors"), ("rock", "paper")]:
                 print(f"{self.players[game_id][0]} wins")
-                self.results[game_id][self.players[game_id][0]] = "Winner"
                 self.results[game_id][self.players[game_id][1]] = "Loser"
-                return self.players[game_id][0]  # return the name of the winner
+                self.results[game_id][self.players[game_id][0]] = "Winner"
+                self.scores[self.players[game_id][0]] += 1  # Increase the score of the winner
             else:
                 print(f"{self.players[game_id][1]} wins")
-                self.results[game_id][self.players[game_id][0]] = "Loser"
                 self.results[game_id][self.players[game_id][1]] = "Winner"
-                return self.players[game_id][1]  # return the name of the winner
-        return False
+                self.results[game_id][self.players[game_id][0]] = "Loser"
+                self.scores[self.players[game_id][1]] += 1  # Increase the score of the winner
+        return True
+
 
     def get_state(self, game_id, player):
         if game_id in self.results and player in self.results[game_id]:
@@ -64,6 +66,9 @@ class GameServer(object):
             self.results[game_id] = {}
             return True
         return False
+
+    def get_score(self, player_name):
+        return self.scores[player_name]
 
 
 def main():

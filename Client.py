@@ -3,7 +3,6 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QTimer
 import random
-import time
 
 
 class GameClient(QWidget):
@@ -66,6 +65,7 @@ class GameClient(QWidget):
             self.made_move = True  # Set the flag to indicate that a move has been made
             self.move_label.setText(f"Your move: {choice}")
             sender.setEnabled(False)  # Disable the chosen button
+            print(f"Player: {self.player_name} chose: {choice}")
 
     def check_winner(self):
         winner = self.server.determine_winner(self.game_id)
@@ -73,11 +73,15 @@ class GameClient(QWidget):
             self.show_winner(winner)
 
     def show_winner(self, winner):
+        print(f'self.player_name: {self.player_name}: {winner}')
         if winner == "Draw":
+            print("It's a draw.")
             text = "It's a draw."
         elif winner == "Winner":
+            print("You win!")
             text = "You win!"
         else:
+            print("You lose!")
             text = "You lose!"
         self.result_label.setText(text)
         self.polling_timer.stop()  # Stop polling after displaying the result
@@ -85,10 +89,8 @@ class GameClient(QWidget):
         self.rematch_button.setEnabled(True)  # Enable the rematch button
 
     def update_score(self):
-        state = self.server.get_state(self.game_id, self.player_name)
-        if state:
-            score = state.count("Winner")
-            self.score_label.setText(f"Score: {score}")
+        score = self.server.get_score(self.player_name)
+        self.score_label.setText(f"Score: {score}")
 
     def poll_state(self):
         state = self.server.get_state(self.game_id, self.player_name)
@@ -120,11 +122,12 @@ class GameClient(QWidget):
 
 def main():
     player_name = "Player" + str(random.randint(1, 100))  # Generate a random player name
+    print(f"Player name: {player_name}")
     game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:50693")
     game_id = game_server.register(player_name)
 
     app = QApplication([])
-    position = (random.randint(0, 800), random.randint(0, 600))
+    position = (random.randint(0, 600), random.randint(0, 400))
     client = GameClient(player_name, game_server, position)
     client.game_id = game_id
     client.show()
