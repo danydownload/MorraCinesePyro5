@@ -1,12 +1,15 @@
 import Pyro5.api
 import sys
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QTimer
 import random
 
 
 class GameClient(QWidget):
-    POLLING_INTERVAL = 2  # Polling interval in seconds
+    POLLING_INTERVAL = 1  # Polling interval in seconds
+    REMATCH_POLLING_INTERVAL = 1  # Polling interval in seconds for rematch state
+
 
     def __init__(self, player_name, server, position):
         super(GameClient, self).__init__()
@@ -53,8 +56,12 @@ class GameClient(QWidget):
         self.setLayout(hbox)
 
         self.polling_timer = QTimer()
-        self.polling_timer.timeout.connect(self.poll_state)
+        self.polling_timer.timeout.connect(self.poll_game_state)
         self.polling_timer.start(self.POLLING_INTERVAL * 1000)
+
+        self.rematch_polling_timer = QTimer()
+        self.rematch_polling_timer.timeout.connect(self.poll_rematch_status)
+        # self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
 
     @pyqtSlot()
     def make_choice(self):
@@ -85,6 +92,7 @@ class GameClient(QWidget):
             text = "You lose!"
         self.result_label.setText(text)
         self.polling_timer.stop()  # Stop polling after displaying the result
+        self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
         self.update_score()
         self.rematch_button.setEnabled(True)  # Enable the rematch button
 
@@ -92,18 +100,29 @@ class GameClient(QWidget):
         score = self.server.get_score(self.player_name)
         self.score_label.setText(f"Score: {score}")
 
-    def poll_state(self):
-        state = self.server.get_state(self.game_id, self.player_name)
-        if state:
-            self.show_winner(state)
+    def poll_game_state(self):
+        game_state = self.server.get_game_state(self.game_id, self.player_name)
+        # print(f"[POLLING] Game state: {game_state}")
+        if game_state:
+            self.show_winner(game_state)
+
+    def poll_rematch_status(self):
+        rematch_status = self.server.get_rematch_status(self.game_id)
+        # print(f"[POLLING] Rematch status: {rematch_status}")
+        if rematch_status == "REMATCH":
+            self.reset_game_state()
+            self.rematch_button.setEnabled(False)
 
     def request_rematch(self):
-        reply = QMessageBox.question(self, "Rematch", "Do you want to request a rematch?", QMessageBox.Yes | QMessageBox.No)
+        reply = QMessageBox.question(self, "Rematch", "Do you want to request a rematch?",
+                                     QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            rematch_requested = self.server.rematch(self.game_id)
+            rematch_requested = self.server.rematch(self.game_id, self.player_name)
             if rematch_requested:
-                self.rematch_button.setEnabled(False)  # Disable the rematch button until the other player requests a rematch
+                self.rematch_button.setEnabled(
+                    False)  # Disable the rematch button until the other player requests a rematch
                 self.reset_game_state()
+                self.server.reset_rematch_status(self.game_id)  # Reset the rematch status on the server
 
     def reset_game_state(self):
         for btn in self.buttons:
@@ -112,22 +131,30 @@ class GameClient(QWidget):
         self.result_label.clear()
         self.made_move = False
         self.polling_timer.start(self.POLLING_INTERVAL * 1000)
-
-    def rematch(self):
-        reply = QMessageBox.question(self, "Rematch", "Do you want to rematch?", QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.server.rematch(self.game_id)
-            self.reset_game_state()
+        self.rematch_polling_timer.stop()
 
 
 def main():
     player_name = "Player" + str(random.randint(1, 100))  # Generate a random player name
     print(f"Player name: {player_name}")
-    game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:50693")
+    game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
     game_id = game_server.register(player_name)
 
     app = QApplication([])
-    position = (random.randint(0, 600), random.randint(0, 400))
+
+    # Ottieni le dimensioni dello schermo
+    screen_resolution = QtWidgets.QDesktopWidget().screenGeometry(-1)
+    screen_width = screen_resolution.width()
+    screen_height = screen_resolution.height()
+
+    # Calcola il range di posizionamento
+    x_range = (0, int(screen_width * 0.75))  # fino al 75% della larghezza dello schermo
+    y_range = (0, int(screen_height * 0.25))  # fino al 25% dell'altezza dello schermo
+
+    # Genera una posizione random nel range
+    position = (random.randint(*x_range), random.randint(*y_range))
+
+
     client = GameClient(player_name, game_server, position)
     client.game_id = game_id
     client.show()
