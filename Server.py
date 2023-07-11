@@ -23,17 +23,24 @@ class GameServer(object):
             print(f"{player} ha scelto: {choice}")
             if len(self.moves[game_id]) == 2:
                 return self.determine_winner(game_id)
+            elif len(self.moves[game_id]) == 1:
+                return "Waiting for the other player to make a move."
         return None
 
     def determine_winner(self, game_id):
+        print(f"Partita {game_id} - Determining winner")
+        print(len(self.moves[game_id]))
+        print(self.moves[game_id])
         if game_id in self.moves and len(self.moves[game_id]) == 2:
+            print(f"Partita {game_id} - Determining winner")
             move_1, move_2 = self.moves[game_id].values()
+            del self.moves[game_id]  # Reset the moves for this game_id
             if move_1 == move_2:
                 return "Draw"
             elif (move_1, move_2) in [("rock", "scissors"), ("scissors", "paper"), ("paper", "rock")]:
-                return list(self.moves[game_id].keys())[0]  # return the name of the player who made the first move
+                return self.players[game_id]  # return the list of players
             else:
-                return list(self.moves[game_id].keys())[1]  # return the name of the player who made the second move
+                return list(reversed(self.players[game_id]))  # return the reversed list of players
         return False
 
 
@@ -48,7 +55,6 @@ def main():
         },
         port=50693,
         ns=False)
-
 
     daemon.requestLoop()
 
