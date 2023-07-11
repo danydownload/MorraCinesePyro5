@@ -6,8 +6,8 @@ class GameServer(object):
     def __init__(self):
         self.players = defaultdict(list)  # keep track of players for each game
         self.moves = defaultdict(dict)  # keep track of moves for each game
-        self.game_count = 0
         self.results = defaultdict(dict)  # keep track of results for each game
+        self.game_count = 0
 
     def register(self, name):
         if self.game_count in self.players and len(self.players[self.game_count]) < 2:
@@ -57,6 +57,13 @@ class GameServer(object):
         if game_id in self.results and player in self.results[game_id]:
             return self.results[game_id][player]
         return None
+
+    def rematch(self, game_id):
+        if game_id in self.players:
+            self.moves[game_id] = {}
+            self.results[game_id] = {}
+            return True
+        return False
 
 
 def main():
