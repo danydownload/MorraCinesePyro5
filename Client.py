@@ -10,7 +10,6 @@ class GameClient(QWidget):
     POLLING_INTERVAL = 1  # Polling interval in seconds
     REMATCH_POLLING_INTERVAL = 1  # Polling interval in seconds for rematch state
 
-
     def __init__(self, player_name, server, position):
         super(GameClient, self).__init__()
         self.setWindowTitle(f"Player: {player_name}")
@@ -134,13 +133,28 @@ class GameClient(QWidget):
         self.rematch_polling_timer.stop()
 
 
-def main():
-    player_name = "Player" + str(random.randint(1, 100))  # Generate a random player name
-    print(f"Player name: {player_name}")
-    game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
-    game_id = game_server.register(player_name)
+from PyQt5.QtWidgets import QInputDialog, QMessageBox
 
+
+def main():
     app = QApplication([])
+
+    game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
+
+    while True:
+        player_name, ok = QInputDialog.getText(None, "Player Registration", "Enter player name:")
+        if ok and player_name:
+            try:
+                game_id = game_server.register(player_name)
+                break  # break out of the loop once registration is successful
+            except ValueError as e:
+                # Show an error dialog if registration fails
+                QMessageBox.critical(None, "Registration Error", str(e))
+        else:
+            print("Player registration cancelled.")
+            sys.exit()  # exit the application if player doesn't provide a name
+
+    print(f"Player name: {player_name}")
 
     # Ottieni le dimensioni dello schermo
     screen_resolution = QtWidgets.QDesktopWidget().screenGeometry(-1)
@@ -153,7 +167,6 @@ def main():
 
     # Genera una posizione random nel range
     position = (random.randint(*x_range), random.randint(*y_range))
-
 
     client = GameClient(player_name, game_server, position)
     client.game_id = game_id

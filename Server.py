@@ -1,6 +1,7 @@
 import Pyro5.api
 from collections import defaultdict
 
+
 @Pyro5.api.expose
 class GameServer(object):
     def __init__(self):
@@ -13,6 +14,10 @@ class GameServer(object):
         self.game_count = 0
 
     def register(self, name):
+        if name in self.players[self.game_count]:
+            raise ValueError(
+                f"Player {name} has already registered for the current game. Please choose a different name.")
+
         if self.game_count in self.players and len(self.players[self.game_count]) < 2:
             self.players[self.game_count].append(name)
             self.moves[self.game_count][name] = None
@@ -29,6 +34,7 @@ class GameServer(object):
         if game_id in self.players and player in self.players[game_id]:
             self.moves[game_id][player] = choice
             print(f"{player} ha scelto: {choice}")
+
             if len(self.moves[game_id]) == 2 and None not in self.moves[game_id].values():
                 return self.determine_winner(game_id)
         return None
@@ -60,9 +66,7 @@ class GameServer(object):
                 self.results[game_id][self.players[game_id][1]] = "Loser"
                 self.scores[self.players[game_id][0]] += 1  # Increase the score of the winner
 
-
         return True
-
 
     def get_game_state(self, game_id, player):
         if game_id in self.results and player in self.results[game_id]:
@@ -99,7 +103,6 @@ class GameServer(object):
 
     def get_score(self, player_name):
         return self.scores[player_name]
-
 
 
 def main():
