@@ -7,18 +7,26 @@ import random
 
 
 class GameClient(QWidget):
-    POLLING_INTERVAL = 1  # Polling interval in seconds
+    POLLING_INTERVAL = 1  # Polling interval in seco.nds
     REMATCH_POLLING_INTERVAL = 1  # Polling interval in seconds for rematch state
 
     def __init__(self, player_name, server, position):
+        """
+        Inizializzazione del client del gioco.
+
+        Args:
+            player_name (str): Il nome del giocatore.
+            server (Pyro5.Proxy): Il proxy per il server del gioco.
+            position (tuple): La posizione iniziale della finestra del client.
+        """
         super(GameClient, self).__init__()
         self.setWindowTitle(f"Player: {player_name}")
         self.setGeometry(*position, 250, 250)
         self.player_name = player_name
         self.server = server
         self.game_id = None
-        self.made_move = False  # Flag to track if the client has made a move
-        self.rematch_button = None  # Rematch button
+        self.made_move = False  # Flag per tenere traccia se il client ha fatto una mossa
+        self.rematch_button = None
 
         self.result_label = QLabel(self)
         self.player_label = QLabel(f"Player: {self.player_name}", self)
@@ -64,21 +72,33 @@ class GameClient(QWidget):
 
     @pyqtSlot()
     def make_choice(self):
-        if not self.made_move:  # Only allow making a move if a move has not been made yet
+        """
+        Registra la scelta di una mossa effettuata dal giocatore.
+        """
+        if not self.made_move:  # Permette di fare una mossa solo se non e' gia' stata fatta una mossa.
             sender = self.sender()
             choice = sender.text()
             self.server.make_choice(self.game_id, self.player_name, choice)
-            self.made_move = True  # Set the flag to indicate that a move has been made
+            self.made_move = True  # Setta il flag a True per indicare che il giocatore ha fatto una mossa.
             self.move_label.setText(f"Your move: {choice}")
             sender.setEnabled(False)  # Disable the chosen button
             print(f"Player: {self.player_name} chose: {choice}")
 
     def check_winner(self):
+        """
+        Controlla il vincitore della partita.
+        """
         winner = self.server.determine_winner(self.game_id)
         if winner:
             self.show_winner(winner)
 
     def show_winner(self, winner):
+        """
+        Mostra il vincitore della partita.
+
+        Args:
+            winner (str): Lo stato del vincitore ("Draw", "Winner", "Loser").
+        """
         print(f'self.player_name: {self.player_name}: {winner}')
         if winner == "Draw":
             print("It's a draw.")
@@ -90,22 +110,31 @@ class GameClient(QWidget):
             print("You lose!")
             text = "You lose!"
         self.result_label.setText(text)
-        self.polling_timer.stop()  # Stop polling after displaying the result
+        self.polling_timer.stop()  # Stop polling dopo aver mostrato il risultato.
         self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
         self.update_score()
         self.rematch_button.setEnabled(True)  # Enable the rematch button
 
     def update_score(self):
+        """
+        Aggiorna il punteggio del giocatore.
+        """
         score = self.server.get_score(self.player_name)
         self.score_label.setText(f"Score: {score}")
 
     def poll_game_state(self):
+        """
+        Esegue il polling dello stato attuale della partita.
+        """
         game_state = self.server.get_game_state(self.game_id, self.player_name)
         # print(f"[POLLING] Game state: {game_state}")
         if game_state:
             self.show_winner(game_state)
 
     def poll_rematch_status(self):
+        """
+        Esegue il polling dello stato di rematch della partita.
+        """
         rematch_status = self.server.get_rematch_status(self.game_id)
         # print(f"[POLLING] Rematch status: {rematch_status}")
         if rematch_status == "REMATCH":
@@ -113,17 +142,23 @@ class GameClient(QWidget):
             self.rematch_button.setEnabled(False)
 
     def request_rematch(self):
+        """
+        Gestisce la richiesta di rematch da parte del giocatore.
+        """
         reply = QMessageBox.question(self, "Rematch", "Do you want to request a rematch?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
             rematch_requested = self.server.rematch(self.game_id, self.player_name)
             if rematch_requested:
                 self.rematch_button.setEnabled(
-                    False)  # Disable the rematch button until the other player requests a rematch
+                    False)  # Disabilita il pulsante di rematch per evitare che venga premuto piu' volte
                 self.reset_game_state()
-                self.server.reset_rematch_status(self.game_id)  # Reset the rematch status on the server
+                self.server.reset_rematch_status(self.game_id)  # Resetta lo stato di rematch della partita
 
     def reset_game_state(self):
+        """
+        Resetta lo stato della partita per iniziarne una nuova.
+        """
         for btn in self.buttons:
             btn.setEnabled(True)
         self.move_label.clear()
@@ -137,6 +172,9 @@ from PyQt5.QtWidgets import QInputDialog, QMessageBox
 
 
 def main():
+    """
+    Funzione principale per avviare il client del gioco.
+    """
     app = QApplication([])
 
     game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
@@ -146,13 +184,13 @@ def main():
         if ok and player_name:
             try:
                 game_id = game_server.register(player_name)
-                break  # break out of the loop once registration is successful
+                break  # Esce dal ciclo se la registrazione e' andata a buon fine
             except ValueError as e:
-                # Show an error dialog if registration fails
+                # Mostra un messaggio di errore se il nome del giocatore e' gia' stato registrato
                 QMessageBox.critical(None, "Registration Error", str(e))
         else:
             print("Player registration cancelled.")
-            sys.exit()  # exit the application if player doesn't provide a name
+            sys.exit()  # Esce dal programma se il giocatore annulla la registrazione
 
     print(f"Player name: {player_name}")
 
