@@ -1,71 +1,15 @@
 import Pyro5.api
 import sys
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QMessageBox, QInputDialog, QLabel, QPushButton
+from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
 from PyQt5.QtCore import QTimer
 import random
+from gamegui import GameGUI
 
 MARGIN = 50
 WINDOW_WIDTH = 250
 WINDOW_HEIGHT = 250
-
-
-class GameGUI(QWidget):
-    def __init__(self, player_name):
-        super(GameGUI, self).__init__()
-
-        self.player_name = player_name
-
-        self.result_label = QLabel()
-        self.player_label = QLabel(f"Player: {self.player_name}")
-        self.move_label = QLabel()
-        self.score_label = QLabel()
-
-        self.choices = ["rock", "paper", "scissors"]
-        self.buttons = []
-        for choice in self.choices:
-            btn = QPushButton(choice)
-            self.buttons.append(btn)
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.player_label)
-        vbox.addWidget(self.result_label)
-        vbox.addWidget(self.move_label)
-        vbox.addWidget(self.score_label)
-
-        for btn in self.buttons:
-            vbox.addWidget(btn)
-
-        self.rematch_button = QPushButton("Rematch")
-        self.rematch_button.setEnabled(False)
-        vbox.addWidget(self.rematch_button)
-
-        self.setLayout(vbox)
-
-        self.score_label.setText("Score: 0")
-
-
-
-    def show_game_state(self, game):
-        self.result_label.setText(game.result)
-        self.move_label.setText(game.move)
-        self.score_label.setText(game.score)
-
-    def show_winner(self, winner):
-        if winner == "Draw":
-            self.result_label.setText("It's a draw.")
-        elif winner == "Winner":
-            self.result_label.setText("You win!")
-        else:
-            self.result_label.setText("You lose!")
-
-    def enable_buttons(self):
-        for btn in self.buttons:
-            btn.setEnabled(True)
-
-    def disable_buttons(self):
-        for btn in self.buttons:
-            btn.setEnabled(False)
+WINDOW_TITLE = "Morra Cinese"
 
 
 class GameClient:
@@ -151,7 +95,7 @@ def main():
     game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
 
     while True:
-        player_name, ok = QInputDialog.getText(None, "Player Registration", "Enter player name:")
+        player_name, ok = QInputDialog.getText(QtWidgets.QWidget(), "Player Registration", "Enter player name:")
         if ok and player_name:
             try:
                 game_id = game_server.register(player_name)
@@ -166,15 +110,14 @@ def main():
     screen_width = screen_resolution.width()
     screen_height = screen_resolution.height()
 
-
     x_range = (MARGIN, screen_width - WINDOW_WIDTH - MARGIN)
     y_range = (MARGIN, screen_height - WINDOW_HEIGHT - MARGIN)
     position = (random.randint(*x_range), random.randint(*y_range))
 
     client = GameClient(player_name, game_server, position)
     client.game_id = game_id
-    client.gui.setGeometry(*position, WINDOW_WIDTH, WINDOW_HEIGHT)  # Ripristina le dimensioni della finestra
-    client.gui.setWindowTitle(f"Morra Cinese - {player_name}")
+    client.gui.setGeometry(*position, WINDOW_WIDTH, WINDOW_HEIGHT)  # Imposta le dimensioni della finestra
+    client.gui.setWindowTitle(f"{WINDOW_TITLE} - {player_name}")
     client.gui.show()
 
     sys.exit(app.exec_())
@@ -182,4 +125,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
