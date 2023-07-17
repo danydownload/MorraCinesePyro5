@@ -6,6 +6,10 @@
 Welcome to Morra Cinese Distribuita's documentation!
 ====================================================
 
+.. _github_repo: https://github.com/danydownload/MorraCinesePyro5
+
+You can find the source code for this project on `GitHub <https://github.com/danydownload/MorraCinesePyro5>`_.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
