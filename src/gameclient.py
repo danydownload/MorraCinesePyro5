@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
 from PyQt5.QtCore import QTimer
 import random
 from gamegui import GameGUI
+from enums import Move, Result, MatchStatus
 
 MARGIN = 50
 WINDOW_WIDTH = 250
@@ -33,13 +34,14 @@ class GameClient:
         self.polling_timer.start(self.POLLING_INTERVAL * 1000)
 
         self.rematch_polling_timer = QTimer()
-        self.rematch_polling_timer.timeout.connect(self.poll_rematch_status)
+        self.rematch_polling_timer.timeout.connect(self.poll_match_status)
 
     def make_choice(self):
         if not self.made_move:
             sender = self.gui.sender()
             choice = sender.text()
-            self.server.make_choice(self.game_id, self.player_name, choice)
+
+            self.server.make_choice(self.player_name, choice)
             self.made_move = True
             self.gui.move_label.setText(f"Your move: {choice}")
 
@@ -58,27 +60,31 @@ class GameClient:
         self.gui.score_label.setText(f"Score: {score}")
 
     def poll_game_state(self):
-        game_state = self.server.get_game_state(self.game_id, self.player_name)
+        game_state = self.server.get_game_state(self.player_name)
         if game_state:
             self.show_winner(game_state)
-        self.update_score()
 
-    def poll_rematch_status(self):
-        rematch_status = self.server.get_rematch_status(self.game_id)
-        if rematch_status == "REMATCH":
+    # TODO: fixare rematch. Poi dovra' essere possibile fare il rematch soltanto dopo che la serie di partite e' finita
+    def poll_match_status(self):
+        match_status = self.server.get_match_status(self.player_name)
+        # match_status e' una stringa invece che un MatchStatus.
+        # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
+        match_status = MatchStatus(match_status)
+        if match_status == MatchStatus.REMATCH:
+            print("Rematch accepted. Resetting game...")
             self.reset_game_state()
             self.gui.rematch_button.setEnabled(False)
+        else:
+            print("Waiting for rematch...")
 
     def request_rematch(self):
         print("Requesting rematch...")
         reply = QMessageBox.question(self.gui, "Rematch", "Do you want to request a rematch?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            rematch_requested = self.server.rematch(self.game_id, self.player_name)
-            if rematch_requested:
-                self.gui.rematch_button.setEnabled(False)
-                self.reset_game_state()
-                self.server.reset_rematch_status(self.game_id)
+            self.server.rematch(self.player_name)
+            self.gui.rematch_button.setEnabled(False)
+
 
     def reset_game_state(self):
         self.gui.enable_buttons()
@@ -98,7 +104,7 @@ def main():
         player_name, ok = QInputDialog.getText(QtWidgets.QWidget(), "Player Registration", "Enter player name:")
         if ok and player_name:
             try:
-                game_id = game_server.register(player_name)
+                game_id = game_server.register_player(player_name)
                 break
             except ValueError as e:
                 QMessageBox.critical(None, "Registration Error", str(e))

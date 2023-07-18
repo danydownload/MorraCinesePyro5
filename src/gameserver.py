@@ -1,5 +1,6 @@
 import Pyro5.api
 from collections import defaultdict
+from game import Game
 
 
 @Pyro5.api.expose
@@ -8,172 +9,128 @@ class GameServer(object):
         """
         Inizializzazione del server del gioco.
         """
-        self.players = defaultdict(list)  # Tiene traccia dei giocatori per ogni partita
-        self.moves = defaultdict(dict)  # Tiene traccia delle mosse per ogni partita
-        self.results = defaultdict(dict)  # Tiene traccia dei risultati per ogni partita
-        self.scores = defaultdict(int)  # Tiene traccia dei punteggi per ogni giocatore
-        self.rematch_requests = defaultdict(set)  # Tiene traccia delle richieste di rematch per ogni partita
-        self.rematch_status = {}  # Tiene traccia dello stato di rematch per ogni partita
-        self.game_count = 0
+        self.games = defaultdict(Game)  # Dizionario per tenere traccia delle partite
+        self.players_game = defaultdict(
+            int)  # Dizionario per tenere traccia dei giocatori e delle partite a cui sono registrati
 
-    def register(self, name):
+    def create_game(self):
         """
-        Registra un giocatore nel gioco e assegna un identificatore di partita.
-
-        Args:
-            name (str): Il nome del giocatore.
+        Crea una nuova partita e restituisce il suo identificatore.
 
         Returns:
-            int: L'identificatore di partita assegnato al giocatore.
-
-        Raises:
-            ValueError: Se il giocatore è già registrato nella partita corrente.
+            int: L'identificatore della nuova partita.
         """
-        if name in self.players[self.game_count]:
-            raise ValueError(
-                f"Player {name} has already registered for the current game. Please choose a different name.")
+        game_id = len(self.games) + 1
+        game = Game()
+        self.games[str(game_id)] = game
+        game.game_id = game_id
 
-        if self.game_count in self.players and len(self.players[self.game_count]) < 2:
-            self.players[self.game_count].append(name)
-            self.moves[self.game_count][name] = None
+        print(f'Nuova partita creata con id {game_id}')
+        print(f'Partite attive: {self.games}')
+
+        return game
+
+    def register_player(self, player_name):
+        """
+        Registra un giocatore nella partita specificata.
+
+        Args:
+            game_id (int): L'identificatore della partita.
+            player_name (str): Il nome del giocatore.
+
+        Returns:
+            bool: True se il giocatore è stato registrato con successo, False altrimenti.
+        """
+        if player_name in self.players_game:
+            raise ValueError(f'È già presente un giocatore con il nome {player_name}. Perfavore scegli un altro nome.')
+
+        game = self.find_available_game()
+        if game is None:
+            new_game = self.create_game()
+            new_game.players.append(player_name)
+            new_game.scores[player_name] = 0
+            new_game.moves[player_name] = None
+            self.players_game[player_name] = new_game.game_id
         else:
-            self.game_count += 1
-            self.players[self.game_count].append(name)
-            self.moves[self.game_count][name] = None
+            # se la partita è disponibile allora registro il giocatore (1 giocatore già registrato)
+            game.players.append(player_name)
+            game.scores[player_name] = 0
+            game.moves[player_name] = None
+            self.players_game[player_name] = game.game_id
 
-        print(f"Partita {self.game_count} - Benvenuto {name} e buona partita")
-        print("moves: ", self.moves[self.game_count])
-        return self.game_count
+        # Stampa i dizionari per scopi di debugging
+        print(f'players_game: {self.players_game}')
+        print(f'games: {self.games}')
 
-    def make_choice(self, game_id, player, choice):
+    def find_available_game(self):
+        """
+        Trova una partita disponibile (con un solo giocatore registrato).
+
+        Returns:
+            Game or None: L'oggetto Game della partita disponibile se presente, None altrimenti.
+        """
+        for game_id, game in self.games.items():
+            if len(game.players) == 1:
+                return game
+        return None
+
+    def make_choice(self, player_name, choice):
         """
         Registra la scelta di una mossa effettuata da un giocatore nella partita corrente.
 
         Args:
-            game_id (int): L'identificatore di partita.
-            player (str): Il nome del giocatore.
+            player_name (str): Il nome del giocatore.
             choice (str): La mossa scelta dal giocatore.
 
         Returns:
             bool: True se la mossa di entrambi i giocatori è stata registrata e viene determinato il vincitore,
                   False altrimenti.
         """
-        if game_id in self.players and player in self.players[game_id]:
-            self.moves[game_id][player] = choice
-            print(f"{player} ha scelto: {choice}")
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        game.make_choice(player_name, choice)
 
-            if len(self.moves[game_id]) == 2 and None not in self.moves[game_id].values():
-                return self.determine_winner(game_id)
-        return None
-
-    def determine_winner(self, game_id):
-        """
-        Determina il vincitore della partita in base alle mosse dei giocatori.
-
-        Args:
-            game_id (int): L'identificatore di partita.
-
-        Returns:
-            bool: True se la partita è stata determinata correttamente, False altrimenti.
-        """
-        print(f"Partita {game_id} - Determining winner")
-        print(len(self.moves[game_id]))
-        print(self.moves[game_id])
-        if game_id in self.moves and len(self.moves[game_id]) == 2:
-            self.rematch_status[game_id] = None  # Resetta il rematch status per questo game_id
-            print(f"Partita {game_id} - Determining winner")
-            print(f'mosse: {self.moves[game_id]}')
-            move_1, move_2 = self.moves[game_id].values()
-            del self.moves[game_id]  # Resetta le mosse per questo game_id
-            if move_1 == move_2:
-                print("Draw")
-                self.results[game_id][self.players[game_id][0]] = "Draw"
-                self.results[game_id][self.players[game_id][1]] = "Draw"
-            elif (move_1, move_2) in [("scissors", "rock"), ("paper", "scissors"), ("rock", "paper")]:
-                print('player 1 wins')
-                print(f"{self.players[game_id][1]} wins")
-                self.results[game_id][self.players[game_id][0]] = "Loser"
-                self.results[game_id][self.players[game_id][1]] = "Winner"
-                self.scores[self.players[game_id][1]] += 1  # Aumenta il punteggio del vincitore
-            else:
-                print('player 0 wins')
-                print(f"{self.players[game_id][0]} wins")
-                self.results[game_id][self.players[game_id][0]] = "Winner"
-                self.results[game_id][self.players[game_id][1]] = "Loser"
-                self.scores[self.players[game_id][0]] += 1  # Aumenta il punteggio del vincitore
-
-        return True
-
-    def get_game_state(self, game_id, player):
+    def get_game_state(self, player_name):
         """
         Ottiene lo stato attuale della partita per un giocatore specifico.
 
         Args:
-            game_id (int): L'identificatore di partita.
-            player (str): Il nome del giocatore.
+            player_name (str): Il nome del giocatore.
 
         Returns:
             str or None: Lo stato attuale della partita ("Winner", "Loser", "Draw") se disponibile, None altrimenti.
         """
-        if game_id in self.results and player in self.results[game_id]:
-            return self.results[game_id][player]
-        return None
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.get_player_state(player_name)
 
-    def reset_rematch_status(self, game_id):
-        """
-        Resetta lo stato di rematch per una partita specifica.
-
-        Args:
-            game_id (int): L'identificatore di partita.
-
-        Returns:
-            bool: True se lo stato di rematch è stato resettato con successo, False altrimenti.
-        """
-        if game_id in self.rematch_status:
-            return True
-        return False
-
-    def rematch(self, game_id, player_name):
+    def rematch(self, player_name):
         """
         Gestisce la richiesta di rematch da parte di un giocatore.
 
         Args:
-            game_id (int): L'identificatore di partita.
             player_name (str): Il nome del giocatore che richiede il rematch.
 
         Returns:
             bool: True se il rematch è stato richiesto con successo, False altrimenti.
         """
-        if game_id in self.players:
-            self.rematch_requests[game_id].add(player_name)
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.request_rematch(player_name)
 
-            # Se entrambi i giocatori hanno richiesto il rematch, setta il rematch status e resetta lo stato del gioco
-            if len(self.rematch_requests[game_id]) == len(self.players[game_id]):
-                print(f"Partita {game_id} - Rematch accepted")
-                self.rematch_status[game_id] = "REMATCH"
-                self.rematch_requests[game_id].clear()
-
-                self.moves[game_id][self.players[game_id][0]] = None
-                self.moves[game_id][self.players[game_id][1]] = None
-                self.results[game_id] = {}  # Cancella i risultati della partita
-                return True
-
-        return False
-
-    def get_rematch_status(self, game_id):
+    def get_match_status(self, player_name):
         """
         Ottiene lo stato di rematch per una partita specifica.
 
         Args:
-            game_id (int): L'identificatore di partita.
+            player_name (str): Il nome del giocatore.
 
         Returns:
             str or None: Lo stato di rematch ("REMATCH") se disponibile, None altrimenti.
         """
-        if game_id in self.rematch_status:
-            return self.rematch_status[game_id]
-        else:
-            return None
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.get_match_status()
 
     def get_score(self, player_name):
         """
@@ -185,7 +142,9 @@ class GameServer(object):
         Returns:
             int: Il punteggio attuale del giocatore.
         """
-        return self.scores[player_name]
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.get_score(player_name)
 
 
 def main():
@@ -194,7 +153,7 @@ def main():
     """
     daemon = Pyro5.api.Daemon()
 
-    game_server = GameServer()  # Create una singola istanza del server
+    game_server = GameServer()  # Creazione di una singola istanza del server
 
     Pyro5.api.Daemon.serveSimple(
         {
