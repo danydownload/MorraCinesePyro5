@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 from enums import Move, Result, MatchStatus
 
 BEST_OF_FIVE = 5
@@ -18,6 +19,7 @@ class Game:
         self.game_series = 0  # Numero di partite giocate nella serie
         self.winner = None  # Vincitore della partita
         self.match_status = MatchStatus.ONGOING  # Stato del match
+        self.ready_to_play_again = 0  # Flag per indicare se i giocatori sono pronti a giocare di nuovo
 
     def register_player(self, player_name):
         """
@@ -62,18 +64,30 @@ class Game:
             self.moves[player_name] = choice
             if len(self.moves) == 2 and None not in self.moves.values():
                 if self.game_series == BEST_OF_FIVE:
+                    print("CALLING DETERMINE SERIES WINNER")
+                    self.determine_winner()
                     self.determine_series_winner()
+                    self.match_status = MatchStatus.SERIES_OVER
+                    self.game_series = 0
                 else:
+                    print("CALLING DETERMINE WINNER")
                     self.determine_winner()
                     self.game_series += 1
+                    self.match_status = MatchStatus.OVER
 
-            print(f'\nall moves: {self.moves}')
+            print(f'all moves: {self.moves}')
 
     def determine_winner(self):
         """
         Determina il vincitore della partita in base alle mosse dei giocatori.
         """
+
+        print(f'Determining winner...')
+
         move_1, move_2 = self.moves.values()
+
+        print(f'Move 1: {move_1} - Move 2: {move_2}')
+
         if move_1 == move_2:
             self.results[self.players[0]] = "Draw"
             self.results[self.players[1]] = "Draw"
@@ -85,6 +99,20 @@ class Game:
             self.results[self.players[0]] = "Winner"
             self.results[self.players[1]] = "Loser"
             self.scores[self.players[0]] += 1
+
+    def reset_state_after_single_match(self, player_name):
+        """
+        Resetta lo stato della partita dopo una singola partita.
+        """
+        print(f'Resetting state after single match...')
+
+        self.ready_to_play_again += 1
+        self.moves[player_name] = None
+        self.results[player_name] = None
+
+        if self.ready_to_play_again == 2:
+            self.match_status = MatchStatus.ONGOING
+            self.ready_to_play_again = 0
 
     def get_game_state(self, player_name):
         """
@@ -120,6 +148,7 @@ class Game:
             print('Mosse resettate: ', self.moves)
             self.match_status = MatchStatus.REMATCH
             self.rematch_counter = 0
+            self.winner = None
 
     def get_score(self, player_name):
         """
@@ -151,6 +180,10 @@ class Game:
         else:
             self.winner = self.players[1]
 
+        print(f'Winner of the series: {self.winner}')
+
     def get_match_status(self):
         return self.match_status
 
+    def get_winner_of_series(self):
+        return self.winner

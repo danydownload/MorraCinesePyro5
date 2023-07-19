@@ -39,13 +39,22 @@ class GameGUI(QWidget):
         self.move_label.setText(game.move)
         self.score_label.setText(game.score)
 
-    def show_winner(self, winner):
-        if winner == "Draw":
-            self.result_label.setText("It's a draw.")
-        elif winner == "Winner":
-            self.result_label.setText("You win!")
+    def show_winner(self, winner, winner_of_series):
+        if not winner_of_series:
+            if winner == "Draw":
+                self.result_label.setText("It's a draw.")
+            elif winner == "Winner":
+                self.result_label.setText("You win!")
+            else:
+                self.result_label.setText("You lose!")
         else:
-            self.result_label.setText("You lose!")
+            if winner_of_series == self.player_name:
+                self.result_label.setText("You won the series!")
+            else:
+                if winner_of_series == "Draw":
+                    self.result_label.setText("It's a draw.")
+                else:
+                    self.result_label.setText("You lost the series!")
 
     def enable_buttons(self):
         for btn in self.buttons:

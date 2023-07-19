@@ -12,6 +12,7 @@ class GameServer(object):
         self.games = defaultdict(Game)  # Dizionario per tenere traccia delle partite
         self.players_game = defaultdict(
             int)  # Dizionario per tenere traccia dei giocatori e delle partite a cui sono registrati
+        self.players_score = defaultdict(int)  # Dizionario per tenere traccia dei punteggi dei giocatori
 
     def create_game(self):
         """
@@ -145,6 +146,25 @@ class GameServer(object):
         game_id = self.players_game[player_name]
         game = self.games[str(game_id)]
         return game.get_score(player_name)
+
+    def get_game(self, player_name):
+        return self.games[str(self.players_game[player_name])]
+
+    def reset_state_after_single_match(self, player_name):
+        """
+        Resetta lo stato del gioco dopo una partita singola.
+        """
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.reset_state_after_single_match(player_name)
+
+    def get_winner_of_series(self, player_name):
+        """
+        Ottiene il vincitore della serie di partite.
+        """
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.get_winner_of_series()
 
 
 def main():
