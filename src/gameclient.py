@@ -1,8 +1,8 @@
 import Pyro5.api
 import sys
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
-from PyQt5.QtCore import QTimer
+from PyQt6 import QtWidgets, QtGui
+from PyQt6.QtWidgets import QApplication, QMessageBox, QInputDialog
+from PyQt6.QtCore import QTimer
 import random
 from gamegui import GameGUI
 from enums import Move, Result, MatchStatus
@@ -122,7 +122,8 @@ def main():
             print("Player registration cancelled.")
             sys.exit()
 
-    screen_resolution = QtWidgets.QDesktopWidget().availableGeometry()
+    screen_resolution = QtGui.QGuiApplication.primaryScreen().availableGeometry()
+
     screen_width = screen_resolution.width()
     screen_height = screen_resolution.height()
 
@@ -136,7 +137,7 @@ def main():
     client.gui.setWindowTitle(f"{WINDOW_TITLE} - {player_name}")
     client.gui.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
