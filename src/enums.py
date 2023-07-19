@@ -22,3 +22,4 @@ class MatchStatus(Enum):
     REMATCH = "REMATCH"
     OVER = "OVER"
     ONGOING = "ONGOING"
+    SERIES_OVER = "SERIES_OVER"
