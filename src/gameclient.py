@@ -48,12 +48,15 @@ class GameClient:
             for button in self.gui.buttons:
                 button.setEnabled(False)
 
-    def show_winner(self, winner):
-        self.gui.show_winner(winner)
+    def show_winner(self, winner, winner_of_series=None):
+        self.gui.show_winner(winner, winner_of_series)
         self.polling_timer.stop()
         self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
         self.update_score()
-        self.gui.rematch_button.setEnabled(True)  # Enable the rematch button
+
+        # solo se lo stato della partita e' REMATCH, allora abilito il pulsante per il rematch
+        if MatchStatus(self.server.get_match_status(self.player_name)) == MatchStatus.SERIES_OVER:
+            self.gui.rematch_button.setEnabled(True)  # Enable the rematch button
 
     def update_score(self):
         score = self.server.get_score(self.player_name)
@@ -61,8 +64,14 @@ class GameClient:
 
     def poll_game_state(self):
         game_state = self.server.get_game_state(self.player_name)
-        if game_state:
+        match_status = MatchStatus(self.server.get_match_status(self.player_name))
+        winner_of_series = self.server.get_winner_of_series(self.player_name)
+        # print(f'game_state: {game_state}, match_status: {match_status}')
+        if game_state and match_status == MatchStatus.OVER:
             self.show_winner(game_state)
+
+        if match_status == MatchStatus.SERIES_OVER:
+            self.show_winner(game_state, winner_of_series)
 
     # TODO: fixare rematch. Poi dovra' essere possibile fare il rematch soltanto dopo che la serie di partite e' finita
     def poll_match_status(self):
@@ -70,12 +79,14 @@ class GameClient:
         # match_status e' una stringa invece che un MatchStatus.
         # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
         match_status = MatchStatus(match_status)
-        if match_status == MatchStatus.REMATCH:
-            print("Rematch accepted. Resetting game...")
+
+        if match_status == MatchStatus.OVER:
+            print("Match is over")
+            self.server.reset_state_after_single_match(self.player_name)
+            QTimer.singleShot(1000, self.reset_game_state)
+        elif match_status == MatchStatus.REMATCH:
             self.reset_game_state()
             self.gui.rematch_button.setEnabled(False)
-        else:
-            print("Waiting for rematch...")
 
     def request_rematch(self):
         print("Requesting rematch...")
@@ -84,7 +95,6 @@ class GameClient:
         if reply == QMessageBox.Yes:
             self.server.rematch(self.player_name)
             self.gui.rematch_button.setEnabled(False)
-
 
     def reset_game_state(self):
         self.gui.enable_buttons()
