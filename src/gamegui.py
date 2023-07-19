@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 
 class GameGUI(QWidget):
     def __init__(self, player_name):
