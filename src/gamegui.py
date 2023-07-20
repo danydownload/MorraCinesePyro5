@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 
+
 class GameGUI(QWidget):
     def __init__(self, player_name):
         super(GameGUI, self).__init__()
@@ -8,8 +9,13 @@ class GameGUI(QWidget):
 
         self.result_label = QLabel()
         self.player_label = QLabel(f"Player: {self.player_name}")
+        self.num_of_matches_label = QLabel()
+        self.num_of_matches_label.setStyleSheet("color: red;")
         self.move_label = QLabel()
+        self.move_label.setStyleSheet("color: blue;")
         self.score_label = QLabel()
+        self.general_score_label = QLabel()
+        self.general_score_label.setStyleSheet("color: green;")
 
         self.choices = ["rock", "paper", "scissors"]
         self.buttons = []
@@ -19,9 +25,11 @@ class GameGUI(QWidget):
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.player_label)
+        vbox.addWidget(self.num_of_matches_label)
         vbox.addWidget(self.result_label)
         vbox.addWidget(self.move_label)
         vbox.addWidget(self.score_label)
+        vbox.addWidget(self.general_score_label)
 
         for btn in self.buttons:
             vbox.addWidget(btn)
@@ -32,7 +40,9 @@ class GameGUI(QWidget):
 
         self.setLayout(vbox)
 
-        self.score_label.setText("Score: 0")
+        self.num_of_matches_label.setText("Match 1 of 5")
+        self.score_label.setText("Score of the series: 0")
+        self.general_score_label.setText("General score: 0")
 
     def show_game_state(self, game):
         self.result_label.setText(game.result)
@@ -48,11 +58,13 @@ class GameGUI(QWidget):
             else:
                 self.result_label.setText("You lose!")
         else:
+            self.clear_labels(self.move_label, self.result_label)
+
             if winner_of_series == self.player_name:
                 self.result_label.setText("You won the series!")
             else:
                 if winner_of_series == "Draw":
-                    self.result_label.setText("It's a draw.")
+                    self.result_label.setText("This series ends with a draw!")
                 else:
                     self.result_label.setText("You lost the series!")
 
@@ -63,3 +75,8 @@ class GameGUI(QWidget):
     def disable_buttons(self):
         for btn in self.buttons:
             btn.setEnabled(False)
+
+    # general function that clear all the labels passed as input
+    def clear_labels(self, *labels):
+        for label in labels:
+            label.clear()

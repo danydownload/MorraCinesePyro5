@@ -16,7 +16,7 @@ class Game:
         self.results = defaultdict(lambda: None)  # Risultati della partita
         self.scores = defaultdict(int)  # Punteggi dei giocatori
         self.rematch_counter = 0  # Flag per indicare se è stata richiesta una rematch
-        self.game_series = 0  # Numero di partite giocate nella serie
+        self.game_series = 1  # Numero di partite giocate nella serie
         self.winner = None  # Vincitore della partita
         self.match_status = MatchStatus.ONGOING  # Stato del match
         self.ready_to_play_again = 0  # Flag per indicare se i giocatori sono pronti a giocare di nuovo
@@ -63,19 +63,19 @@ class Game:
         if player_name in self.players and self.moves[player_name] is None:
             self.moves[player_name] = choice
             if len(self.moves) == 2 and None not in self.moves.values():
-                if self.game_series == BEST_OF_FIVE:
-                    print("CALLING DETERMINE SERIES WINNER")
-                    self.determine_winner()
+
+                self.determine_winner()
+
+                if self.game_series == BEST_OF_FIVE or abs(
+                        self.scores[self.players[0]] - self.scores[self.players[1]]) > BEST_OF_FIVE - self.game_series:
                     self.determine_series_winner()
                     self.match_status = MatchStatus.SERIES_OVER
-                    self.game_series = 0
+                    self.game_series = 1
                 else:
-                    print("CALLING DETERMINE WINNER")
-                    self.determine_winner()
                     self.game_series += 1
                     self.match_status = MatchStatus.OVER
 
-            print(f'all moves: {self.moves}')
+            # print(f'all moves: {self.moves}')
 
     def determine_winner(self):
         """
@@ -141,6 +141,7 @@ class Game:
         print(f'{player_name} ha richiesto un rematch.')
         self.moves[player_name] = None
         self.results[player_name] = None
+        self.scores[player_name] = 0
 
         if self.rematch_counter == 2:
             print(f'Entrambi i giocatori hanno richiesto un rematch.')
@@ -165,12 +166,6 @@ class Game:
     def get_player_state(self, player_name):
         return self.results[player_name]
 
-    # TODO: considerare il rematch
-    def is_game_over(self):
-        if self.game_series == BEST_OF_FIVE:
-            return True
-        return False
-
     def determine_series_winner(self):
         # check the winner of the series
         if self.scores[self.players[0]] == self.scores[self.players[1]]:
@@ -187,3 +182,7 @@ class Game:
 
     def get_winner_of_series(self):
         return self.winner
+
+    def get_num_of_match(self):
+        return self.game_series
+

@@ -45,6 +45,8 @@ class GameServer(object):
         if player_name in self.players_game:
             raise ValueError(f'È già presente un giocatore con il nome {player_name}. Perfavore scegli un altro nome.')
 
+        self.players_score[player_name] = 0
+
         game = self.find_available_game()
         if game is None:
             new_game = self.create_game()
@@ -164,8 +166,33 @@ class GameServer(object):
         """
         game_id = self.players_game[player_name]
         game = self.games[str(game_id)]
+        # return game.get_winner_of_series()
         return game.get_winner_of_series()
 
+    def update_general_score(self, player_name):
+        """
+        Aggiorna il punteggio generale del giocatore.
+        """
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        game_winner = game.get_winner_of_series()
+
+        if game_winner == player_name:
+            self.players_score[player_name] += 1
+
+    def get_general_score(self, player_name):
+        """
+        Ottiene il punteggio generale del giocatore.
+        """
+        return self.players_score[player_name]
+
+    def get_num_of_match(self, player_name):
+        """
+        Ottiene il numero di partita in corso della serie.
+        """
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.get_num_of_match()
 
 def main():
     """

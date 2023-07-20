@@ -22,6 +22,7 @@ class GameClient:
         self.server = server
         self.game_id = None
         self.made_move = False  # Flag to track if the client has made a move
+        self.series_over = False  # Flag to track if the match has ended
 
         self.gui = GameGUI(player_name)
         for btn in self.gui.buttons:
@@ -52,6 +53,7 @@ class GameClient:
         self.gui.show_winner(winner, winner_of_series)
         self.polling_timer.stop()
         self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
+
         self.update_score()
 
         # solo se lo stato della partita e' REMATCH, allora abilito il pulsante per il rematch
@@ -60,18 +62,25 @@ class GameClient:
 
     def update_score(self):
         score = self.server.get_score(self.player_name)
-        self.gui.score_label.setText(f"Score: {score}")
+        self.gui.score_label.setText(f"Score of the series: {score}")
 
     def poll_game_state(self):
         game_state = self.server.get_game_state(self.player_name)
         match_status = MatchStatus(self.server.get_match_status(self.player_name))
         winner_of_series = self.server.get_winner_of_series(self.player_name)
+        print("Winner of series: ", winner_of_series)
         # print(f'game_state: {game_state}, match_status: {match_status}')
         if game_state and match_status == MatchStatus.OVER:
             self.show_winner(game_state)
+            self.series_over = False
 
         if match_status == MatchStatus.SERIES_OVER:
             self.show_winner(game_state, winner_of_series)
+            self.server.get_general_score(self.player_name)
+            if not self.series_over:
+                self.server.update_general_score(self.player_name)
+                self.series_over = True
+                self.gui.general_score_label.setText(f"General score: {self.server.get_general_score(self.player_name)}")
 
     # TODO: fixare rematch. Poi dovra' essere possibile fare il rematch soltanto dopo che la serie di partite e' finita
     def poll_match_status(self):
@@ -86,23 +95,28 @@ class GameClient:
             QTimer.singleShot(1000, self.reset_game_state)
         elif match_status == MatchStatus.REMATCH:
             self.reset_game_state()
+            self.update_score()
             self.gui.rematch_button.setEnabled(False)
 
     def request_rematch(self):
         print("Requesting rematch...")
         reply = QMessageBox.question(self.gui, "Rematch", "Do you want to request a rematch?",
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
             self.server.rematch(self.player_name)
             self.gui.rematch_button.setEnabled(False)
 
     def reset_game_state(self):
+        num_of_match = self.server.get_num_of_match(self.player_name)
+        self.gui.num_of_matches_label.setText(f"Match {num_of_match} of 5")
         self.gui.enable_buttons()
         self.gui.move_label.clear()
         self.gui.result_label.clear()
         self.made_move = False
         self.polling_timer.start(self.POLLING_INTERVAL * 1000)
         self.rematch_polling_timer.stop()
+
+
 
 
 def main():
