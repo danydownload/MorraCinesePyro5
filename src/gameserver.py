@@ -1,6 +1,7 @@
 import Pyro5.api
 from collections import defaultdict
 from game import Game
+from enums import Move, Result, MatchStatus
 
 
 @Pyro5.api.expose
@@ -31,6 +32,35 @@ class GameServer(object):
 
         return game
 
+    def add_player_to_game(self, player_name, old_match_id=None):
+        """
+        Aggiunge un giocatore a un game disponibile o crea un nuovo game.
+
+        Args:
+            player_name (str): Il nome del giocatore.
+        """
+        game = self.find_available_game(player_name, old_match_id)
+
+        if game is None:
+            new_game = self.create_game()
+            new_game.players.append(player_name)
+            new_game.scores[player_name] = 0
+            new_game.moves[player_name] = None
+            self.players_game[player_name] = new_game.game_id
+            print(f"Giocatore {player_name} inserito in un nuovo game.")
+        else:
+            game.players.append(player_name)
+            game.scores[player_name] = 0
+            game.moves[player_name] = None
+            self.players_game[player_name] = game.game_id
+            print(f"Giocatore {player_name} inserito in un game disponibile.")
+            game.match_status = MatchStatus.ONGOING
+
+
+        # Stampa i dizionari per scopi di debugging
+        self.players_game = {k: v for k, v in sorted(self.players_game.items(), key=lambda item: item[1])}
+        print(f"players_game: {self.players_game}")
+
     def register_player(self, player_name):
         """
         Registra un giocatore nella partita specificata.
@@ -39,43 +69,40 @@ class GameServer(object):
             game_id (int): L'identificatore della partita.
             player_name (str): Il nome del giocatore.
 
-        Returns:
-            bool: True se il giocatore è stato registrato con successo, False altrimenti.
         """
         if player_name in self.players_game:
             raise ValueError(f'È già presente un giocatore con il nome {player_name}. Perfavore scegli un altro nome.')
 
         self.players_score[player_name] = 0
 
-        game = self.find_available_game()
-        if game is None:
-            new_game = self.create_game()
-            new_game.players.append(player_name)
-            new_game.scores[player_name] = 0
-            new_game.moves[player_name] = None
-            self.players_game[player_name] = new_game.game_id
-        else:
-            # se la partita è disponibile allora registro il giocatore (1 giocatore già registrato)
-            game.players.append(player_name)
-            game.scores[player_name] = 0
-            game.moves[player_name] = None
-            self.players_game[player_name] = game.game_id
+        self.add_player_to_game(player_name)
 
-        # Stampa i dizionari per scopi di debugging
-        print(f'players_game: {self.players_game}')
-        print(f'games: {self.games}')
-
-    def find_available_game(self):
+    def find_available_game(self, player_name, old_match_id=None):
         """
         Trova una partita disponibile (con un solo giocatore registrato).
 
         Returns:
             Game or None: L'oggetto Game della partita disponibile se presente, None altrimenti.
         """
+
+        # game_id viene convertito in stringa perche' il dizionario self.games ha come chiavi stringhe
+        if old_match_id is not None:
+            old_match_id = str(old_match_id)
+
         for game_id, game in self.games.items():
-            if len(game.players) == 1:
-                return game
+            print('type(old_match_id): ', type(old_match_id))
+            print('type game_id: ', type(game_id))
+            if len(game.players) == 1 and player_name not in game.players:
+                if old_match_id is not None and game_id == old_match_id:
+                    print(f"Partita disponibile trovata: {game_id} ma è la stessa partita di prima.")
+                    continue  # Skip the current game if it has the same ID as the old_match_id
+                else:
+                    print(f'game_id: {game_id}, old_game_id: {old_match_id}')
+                    print(f"Nuova partita disponibile trovata: {game_id}")
+                    return game
         return None
+
+
 
     def make_choice(self, player_name, choice):
         """
@@ -119,7 +146,40 @@ class GameServer(object):
         """
         game_id = self.players_game[player_name]
         game = self.games[str(game_id)]
-        return game.request_rematch(player_name)
+
+        # controlla che in partita ci siano due giocatori, se no ritorna NONE
+        if len(game.players) != 2:
+            return None
+        else:
+            return game.request_rematch(player_name)
+
+    def new_match(self, player_name):
+        """
+        Gestisce la richiesta di rematch da parte di un giocatore.
+
+        Args:
+            player_name (str): Il nome del giocatore che richiede il rematch.
+
+        Returns:
+            bool: True se il rematch è stato richiesto con successo, False altrimenti.
+        """
+
+        print(f"Giocatore {player_name} ha richiesto un nuovo match.")
+
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        old_match_id = game.game_id
+        game.request_new_match(player_name)
+        self.add_player_to_game(player_name, old_match_id)
+
+        # printa i giocatori e a che partita sono registrati
+        # print(f"players_game: {self.players_game}")
+        # ordina self.players_game per game_id
+        self.players_game = {k: v for k, v in sorted(self.players_game.items(), key=lambda item: item[1])}
+        print(f"players_game: {self.players_game}")
+
+        # ora printa il player in questione e a che partita e' registrato
+        print(f"player_name: {player_name}, registered to game: {self.players_game[player_name]}")
 
     def get_match_status(self, player_name):
         """
@@ -193,6 +253,7 @@ class GameServer(object):
         game_id = self.players_game[player_name]
         game = self.games[str(game_id)]
         return game.get_num_of_match()
+
 
 def main():
     """

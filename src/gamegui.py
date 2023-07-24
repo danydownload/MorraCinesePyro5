@@ -1,7 +1,10 @@
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 
 
 class GameGUI(QWidget):
+    close_game = pyqtSignal()
+
     def __init__(self, player_name):
         super(GameGUI, self).__init__()
 
@@ -21,6 +24,7 @@ class GameGUI(QWidget):
         self.buttons = []
         for choice in self.choices:
             btn = QPushButton(choice)
+            btn.setEnabled(False)
             self.buttons.append(btn)
 
         vbox = QVBoxLayout()
@@ -36,7 +40,10 @@ class GameGUI(QWidget):
 
         self.rematch_button = QPushButton("Rematch")
         self.rematch_button.setEnabled(False)
+        self.new_match_button = QPushButton("New match")
+        self.new_match_button.setEnabled(False)
         vbox.addWidget(self.rematch_button)
+        vbox.addWidget(self.new_match_button)
 
         self.setLayout(vbox)
 
@@ -76,7 +83,21 @@ class GameGUI(QWidget):
         for btn in self.buttons:
             btn.setEnabled(False)
 
+    def disable_list_of_buttons(self, *buttons):
+        for btn in buttons:
+            btn.setEnabled(False)
+
     # general function that clear all the labels passed as input
     def clear_labels(self, *labels):
         for label in labels:
             label.clear()
+
+    def closeEvent(self, event):
+        """
+        Overridden function to handle the window's close event.
+
+        Args:
+            event (QCloseEvent): The close event.
+        """
+        self.close_game.emit()  # Emit a custom signal to indicate that the game window is closing
+        event.accept()

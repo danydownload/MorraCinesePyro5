@@ -29,6 +29,7 @@ class GameClient:
             btn.clicked.connect(self.make_choice)
 
         self.gui.rematch_button.clicked.connect(self.request_rematch)
+        self.gui.new_match_button.clicked.connect(self.request_new_match)
 
         self.polling_timer = QTimer()
         self.polling_timer.timeout.connect(self.poll_game_state)
@@ -36,6 +37,10 @@ class GameClient:
 
         self.rematch_polling_timer = QTimer()
         self.rematch_polling_timer.timeout.connect(self.poll_match_status)
+
+        self.gui.closeEvent = self.handle_close_event
+        # Connect the custom signal close_game to the unregister_player function
+        self.gui.close_game.connect(self.unregister_player)
 
     def make_choice(self):
         if not self.made_move:
@@ -59,6 +64,8 @@ class GameClient:
         # solo se lo stato della partita e' REMATCH, allora abilito il pulsante per il rematch
         if MatchStatus(self.server.get_match_status(self.player_name)) == MatchStatus.SERIES_OVER:
             self.gui.rematch_button.setEnabled(True)  # Enable the rematch button
+            self.gui.new_match_button.setEnabled(True)  # Enable the new match button
+            self.made_move = False
 
     def update_score(self):
         score = self.server.get_score(self.player_name)
@@ -68,8 +75,13 @@ class GameClient:
         game_state = self.server.get_game_state(self.player_name)
         match_status = MatchStatus(self.server.get_match_status(self.player_name))
         winner_of_series = self.server.get_winner_of_series(self.player_name)
-        print("Winner of series: ", winner_of_series)
+        # print("Winner of series: ", winner_of_series)
         # print(f'game_state: {game_state}, match_status: {match_status}')
+
+        if match_status == MatchStatus.ONGOING and not self.made_move:
+            self.gui.enable_buttons()
+            self.gui.disable_list_of_buttons(self.gui.rematch_button, self.gui.new_match_button)
+
         if game_state and match_status == MatchStatus.OVER:
             self.show_winner(game_state)
             self.series_over = False
@@ -80,7 +92,8 @@ class GameClient:
             if not self.series_over:
                 self.server.update_general_score(self.player_name)
                 self.series_over = True
-                self.gui.general_score_label.setText(f"General score: {self.server.get_general_score(self.player_name)}")
+                self.gui.general_score_label.setText(
+                    f"General score: {self.server.get_general_score(self.player_name)}")
 
     # TODO: fixare rematch. Poi dovra' essere possibile fare il rematch soltanto dopo che la serie di partite e' finita
     def poll_match_status(self):
@@ -89,6 +102,12 @@ class GameClient:
         # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
         match_status = MatchStatus(match_status)
 
+        print(f'match_status: {match_status}')
+        print(f'made_move: {self.made_move}')
+
+        if match_status == MatchStatus.ONGOING and not self.made_move:
+            self.reset_game_state()
+            self.gui.enable_buttons()
         if match_status == MatchStatus.OVER:
             print("Match is over")
             self.server.reset_state_after_single_match(self.player_name)
@@ -103,10 +122,23 @@ class GameClient:
         reply = QMessageBox.question(self.gui, "Rematch", "Do you want to request a rematch?",
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
-            self.server.rematch(self.player_name)
-            self.gui.rematch_button.setEnabled(False)
+            result = self.server.rematch(self.player_name)
+            if result is not None:
+                self.gui.rematch_button.setEnabled(False)
+                self.gui.new_match_button.setEnabled(False)
+                self.made_move = False
 
-    def reset_game_state(self):
+    def request_new_match(self):
+        print("Requesting new match...")
+        reply = QMessageBox.question(self.gui, "New match", "Do you want to request a new match?")
+        if reply == QMessageBox.StandardButton.Yes:
+            self.server.new_match(self.player_name)
+            self.gui.rematch_button.setEnabled(False)
+            self.gui.new_match_button.setEnabled(False)
+            self.made_move = False
+
+    def reset_game_state(self, new_match=False):
+        print("Resetting game state...")
         num_of_match = self.server.get_num_of_match(self.player_name)
         self.gui.num_of_matches_label.setText(f"Match {num_of_match} of 5")
         self.gui.enable_buttons()
@@ -115,8 +147,32 @@ class GameClient:
         self.made_move = False
         self.polling_timer.start(self.POLLING_INTERVAL * 1000)
         self.rematch_polling_timer.stop()
+        if new_match:
+            self.gui.score_label.clear()
 
+    def handle_close_event(self, event):
+        """
+        Custom function to handle the window's close event.
 
+        Args:
+            event (QCloseEvent): The close event.
+        """
+        reply = QMessageBox.question(self.gui, "Exit Game", "Are you sure you want to exit the game?",
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            # Unregister the player before closing the window
+            print(f"Unregistering player {self.player_name}...")
+            #self.server.unregister_player(self.player_name)
+            event.accept()
+        else:
+            event.ignore()
+
+    def unregister_player(self):
+        """
+        Function to unregister the player when the game window is closing.
+        """
+        print(f"[gameclient] Unregistering player {self.player_name}...")
+        # self.server.unregister_player(self.player_name)
 
 
 def main():
@@ -124,6 +180,9 @@ def main():
 
     game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
 
+    player_name = f'Player {random.randint(1, 100)}'
+    game_id = game_server.register_player(player_name)
+    '''
     while True:
         player_name, ok = QInputDialog.getText(QtWidgets.QWidget(), "Player Registration", "Enter player name:")
         if ok and player_name:
@@ -135,6 +194,7 @@ def main():
         else:
             print("Player registration cancelled.")
             sys.exit()
+    '''
 
     screen_resolution = QtGui.QGuiApplication.primaryScreen().availableGeometry()
 

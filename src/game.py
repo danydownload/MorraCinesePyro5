@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from enums import Move, Result, MatchStatus
 
-BEST_OF_FIVE = 5
+BEST_OF_FIVE = 3
 
 
 class Game:
@@ -18,7 +18,7 @@ class Game:
         self.rematch_counter = 0  # Flag per indicare se è stata richiesta una rematch
         self.game_series = 1  # Numero di partite giocate nella serie
         self.winner = None  # Vincitore della partita
-        self.match_status = MatchStatus.ONGOING  # Stato del match
+        self.match_status = MatchStatus.NONE  # Stato del match
         self.ready_to_play_again = 0  # Flag per indicare se i giocatori sono pronti a giocare di nuovo
 
     def register_player(self, player_name):
@@ -55,9 +55,9 @@ class Game:
         Returns:
             bool: True se la mossa è stata registrata con successo, False altrimenti.
         """
-        print('self.moves: ', self.moves.values())
+        #print('self.moves: ', self.moves.values())
         if all(move is None for move in self.moves.values()):
-            print("(None, None) in self.moves.values()")
+            #print("(None, None) in self.moves.values()")
             self.match_status = MatchStatus.ONGOING
 
         if player_name in self.players and self.moves[player_name] is None:
@@ -82,11 +82,11 @@ class Game:
         Determina il vincitore della partita in base alle mosse dei giocatori.
         """
 
-        print(f'Determining winner...')
+        #print(f'Determining winner...')
 
         move_1, move_2 = self.moves.values()
 
-        print(f'Move 1: {move_1} - Move 2: {move_2}')
+        #print(f'Move 1: {move_1} - Move 2: {move_2}')
 
         if move_1 == move_2:
             self.results[self.players[0]] = "Draw"
@@ -104,7 +104,7 @@ class Game:
         """
         Resetta lo stato della partita dopo una singola partita.
         """
-        print(f'Resetting state after single match...')
+
 
         self.ready_to_play_again += 1
         self.moves[player_name] = None
@@ -146,10 +146,21 @@ class Game:
         if self.rematch_counter == 2:
             print(f'Entrambi i giocatori hanno richiesto un rematch.')
             print(f'Inizio una nuova partita.')
-            print('Mosse resettate: ', self.moves)
+            #print('Mosse resettate: ', self.moves)
             self.match_status = MatchStatus.REMATCH
             self.rematch_counter = 0
             self.winner = None
+
+
+    def request_new_match(self, player_name):
+        self.moves[player_name] = None
+        self.results[player_name] = None
+        self.scores[player_name] = 0
+        self.players.remove(player_name)
+        self.winner = None
+        self.match_status = MatchStatus.NONE
+
+
 
     def get_score(self, player_name):
         """
