@@ -55,13 +55,18 @@ class Game:
         Returns:
             bool: True se la mossa è stata registrata con successo, False altrimenti.
         """
-        #print('self.moves: ', self.moves.values())
+        #print player_name, choice and self.moves.values()
+        print(f'player_name: {player_name}, choice: {choice}')
+        print(f'players: {self.players}')
+        print(f'moves: {self.moves}')
+
         if all(move is None for move in self.moves.values()):
             #print("(None, None) in self.moves.values()")
             self.match_status = MatchStatus.ONGOING
 
         if player_name in self.players and self.moves[player_name] is None:
             self.moves[player_name] = choice
+            print(f'{player_name} ha scelto {choice}.')
             if len(self.moves) == 2 and None not in self.moves.values():
 
                 self.determine_winner()
@@ -154,8 +159,12 @@ class Game:
 
     def request_new_match(self, player_name):
         self.moves[player_name] = None
+        self.moves.pop(player_name)
         self.results[player_name] = None
+        self.scores.pop(player_name)
         self.scores[player_name] = 0
+        self.results.pop(player_name)
+
         self.players.remove(player_name)
         self.winner = None
         self.match_status = MatchStatus.NONE

@@ -43,9 +43,13 @@ class GameClient:
         self.gui.close_game.connect(self.unregister_player)
 
     def make_choice(self):
+        print("Making choice...")
         if not self.made_move:
+            print("Choice made...")
             sender = self.gui.sender()
             choice = sender.text()
+
+            print(f'player_name: {self.player_name}, choice: {choice}')
 
             self.server.make_choice(self.player_name, choice)
             self.made_move = True
@@ -55,6 +59,7 @@ class GameClient:
                 button.setEnabled(False)
 
     def show_winner(self, winner, winner_of_series=None):
+        print("Showing winner...")
         self.gui.show_winner(winner, winner_of_series)
         self.polling_timer.stop()
         self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
@@ -110,6 +115,7 @@ class GameClient:
             self.gui.enable_buttons()
         if match_status == MatchStatus.OVER:
             print("Match is over")
+            self.made_move = False
             self.server.reset_state_after_single_match(self.player_name)
             QTimer.singleShot(1000, self.reset_game_state)
         elif match_status == MatchStatus.REMATCH:

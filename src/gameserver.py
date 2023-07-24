@@ -90,8 +90,6 @@ class GameServer(object):
             old_match_id = str(old_match_id)
 
         for game_id, game in self.games.items():
-            print('type(old_match_id): ', type(old_match_id))
-            print('type game_id: ', type(game_id))
             if len(game.players) == 1 and player_name not in game.players:
                 if old_match_id is not None and game_id == old_match_id:
                     print(f"Partita disponibile trovata: {game_id} ma è la stessa partita di prima.")
