@@ -8,7 +8,7 @@ from gamegui import GameGUI
 from enums import Move, Result, MatchStatus
 
 MARGIN = 50
-WINDOW_WIDTH = 250
+WINDOW_WIDTH = 260
 WINDOW_HEIGHT = 250
 WINDOW_TITLE = "Morra Cinese"
 
