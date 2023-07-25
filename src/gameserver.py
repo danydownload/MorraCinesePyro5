@@ -22,7 +22,11 @@ class GameServer(object):
         Returns:
             int: L'identificatore della nuova partita.
         """
-        game_id = len(self.games) + 1
+        # Crea una partita con un game_id che non e' già presente nel dizionario self.games
+        game_id = 1
+        while str(game_id) in self.games:
+            game_id += 1
+
         game = Game()
         self.games[str(game_id)] = game
         game.game_id = game_id
@@ -55,7 +59,6 @@ class GameServer(object):
             self.players_game[player_name] = game.game_id
             print(f"Giocatore {player_name} inserito in un game disponibile.")
             game.match_status = MatchStatus.ONGOING
-
 
         # Stampa i dizionari per scopi di debugging
         self.players_game = {k: v for k, v in sorted(self.players_game.items(), key=lambda item: item[1])}
@@ -99,8 +102,6 @@ class GameServer(object):
                     print(f"Nuova partita disponibile trovata: {game_id}")
                     return game
         return None
-
-
 
     def make_choice(self, player_name, choice):
         """
@@ -168,7 +169,13 @@ class GameServer(object):
         game = self.games[str(game_id)]
         old_match_id = game.game_id
         game.request_new_match(player_name)
+
         self.add_player_to_game(player_name, old_match_id)
+
+        if len(game.players) == 0:
+            del self.games[str(game_id)]
+            print(f"Partita {game_id} rimossa.")
+            print(f"Partite attive: {self.games}")
 
         # printa i giocatori e a che partita sono registrati
         # print(f"players_game: {self.players_game}")
@@ -235,6 +242,8 @@ class GameServer(object):
         game = self.games[str(game_id)]
         game_winner = game.get_winner_of_series()
 
+        print(f"game_winner: {game_winner}")
+
         if game_winner == player_name:
             self.players_score[player_name] += 1
 
@@ -251,6 +260,37 @@ class GameServer(object):
         game_id = self.players_game[player_name]
         game = self.games[str(game_id)]
         return game.get_num_of_match()
+
+    def get_opponent_name(self, player_name):
+        """
+        Ottiene il nome dell'avversario.
+        """
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.get_opponent_name(player_name)
+
+    def unregister_player(self, player_name):
+        """
+        Cancella un giocatore dalla partita.
+
+        Args:
+            player_name (str): Il nome del giocatore.
+        """
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        game.remove_player(player_name)
+        del self.players_game[player_name]
+        print(f"Giocatore {player_name} rimosso dalla partita.")
+        print(f"players_game: {self.players_game}")
+        if len(game.players) == 0:  # se nel game non ci sono piu' giocatori, rimuovi il game
+            del self.games[str(game_id)]
+            print(f"Partita {game_id} rimossa.")
+            print(f"Partite attive: {self.games}")
+
+    def reset_after_left(self, player_name):
+        game_id = self.players_game[player_name]
+        game = self.games[str(game_id)]
+        return game.reset_after_left(player_name)
 
 
 def main():

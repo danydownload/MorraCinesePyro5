@@ -24,3 +24,4 @@ class MatchStatus(Enum):
     ONGOING = "ONGOING"
     SERIES_OVER = "SERIES_OVER"
     NONE = "NONE"
+    LEFT = "LEFT"

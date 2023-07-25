@@ -19,6 +19,8 @@ class GameGUI(QWidget):
         self.score_label = QLabel()
         self.general_score_label = QLabel()
         self.general_score_label.setStyleSheet("color: green;")
+        self.playing_against_label = QLabel()
+        self.playing_against_label.setStyleSheet("color: purple;")
 
         self.choices = ["rock", "paper", "scissors"]
         self.buttons = []
@@ -29,6 +31,7 @@ class GameGUI(QWidget):
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.player_label)
+        vbox.addWidget(self.playing_against_label)
         vbox.addWidget(self.num_of_matches_label)
         vbox.addWidget(self.result_label)
         vbox.addWidget(self.move_label)
@@ -47,6 +50,7 @@ class GameGUI(QWidget):
 
         self.setLayout(vbox)
 
+        self.playing_against_label.setText("Playing against: None")
         self.num_of_matches_label.setText("Match 1 of 5")
         self.score_label.setText("Score of the series: 0")
         self.general_score_label.setText("General score: 0")

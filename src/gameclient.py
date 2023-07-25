@@ -60,6 +60,12 @@ class GameClient:
 
     def show_winner(self, winner, winner_of_series=None):
         print("Showing winner...")
+
+        if winner_of_series is not None:
+            self.server.update_general_score(self.player_name)
+            self.gui.general_score_label.setText(
+                f"General score: {self.server.get_general_score(self.player_name)}")
+
         self.gui.show_winner(winner, winner_of_series)
         self.polling_timer.stop()
         self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
@@ -83,9 +89,34 @@ class GameClient:
         # print("Winner of series: ", winner_of_series)
         # print(f'game_state: {game_state}, match_status: {match_status}')
 
+        if match_status == MatchStatus.LEFT:
+            self.gui.disable_buttons()
+            self.gui.playing_against_label.setText(
+                f"Playing against: {self.server.get_opponent_name(self.player_name)}")
+            # self.gui.result_label.setText("Your opponent left the match. You win!")
+            self.gui.move_label.clear()
+            self.gui.rematch_button.setEnabled(False)
+            self.gui.new_match_button.setEnabled(True)
+            self.made_move = False
+            self.polling_timer.stop()
+            self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
+
+            print("Self.series_over: ", self.series_over)
+            if not self.series_over:
+                print("GAME-STATE LEFT: Updating general score")
+                self.gui.result_label.setText("Your opponent left the match. You win!")
+                self.server.update_general_score(self.player_name)
+
+            self.gui.general_score_label.setText(
+                f"General score: {self.server.get_general_score(self.player_name)}")
+            self.server.reset_after_left(self.player_name)
+
         if match_status == MatchStatus.ONGOING and not self.made_move:
+            print("[POLL GAME STATE]: Match is ongoing - move not made yet")
             self.gui.enable_buttons()
             self.gui.disable_list_of_buttons(self.gui.rematch_button, self.gui.new_match_button)
+            self.gui.playing_against_label.setText(
+                f"Playing against: {self.server.get_opponent_name(self.player_name)}")
 
         if game_state and match_status == MatchStatus.OVER:
             self.show_winner(game_state)
@@ -94,25 +125,48 @@ class GameClient:
         if match_status == MatchStatus.SERIES_OVER:
             self.show_winner(game_state, winner_of_series)
             self.server.get_general_score(self.player_name)
-            if not self.series_over:
-                self.server.update_general_score(self.player_name)
-                self.series_over = True
-                self.gui.general_score_label.setText(
-                    f"General score: {self.server.get_general_score(self.player_name)}")
+            # TODO check if this is correct
+            self.series_over = True
+            # if not self.series_over:
+            #     self.server.update_general_score(self.player_name)
+            #     self.gui.general_score_label.setText(
+            #         f"General score: {self.server.get_general_score(self.player_name)}")
 
-    # TODO: fixare rematch. Poi dovra' essere possibile fare il rematch soltanto dopo che la serie di partite e' finita
     def poll_match_status(self):
         match_status = self.server.get_match_status(self.player_name)
         # match_status e' una stringa invece che un MatchStatus.
         # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
         match_status = MatchStatus(match_status)
 
-        print(f'match_status: {match_status}')
-        print(f'made_move: {self.made_move}')
+        # print(f'match_status: {match_status}')
+        # print(f'made_move: {self.made_move}')
+
+        if match_status == MatchStatus.LEFT:
+            self.gui.disable_buttons()
+            self.gui.playing_against_label.setText(
+                f"Playing against: {self.server.get_opponent_name(self.player_name)}")
+            self.gui.move_label.clear()
+            self.gui.rematch_button.setEnabled(False)
+            self.gui.new_match_button.setEnabled(True)
+            self.made_move = False
+            self.polling_timer.stop()
+            self.rematch_polling_timer.start(self.REMATCH_POLLING_INTERVAL * 1000)
+            print("[MS]Self.series_over: ", self.series_over)
+            if not self.series_over:
+                print("MATCH-STATUS LEFT: Updating general score")
+                self.gui.result_label.setText("Your opponent left the match. You win!")
+                self.server.update_general_score(self.player_name)
+
+            self.gui.general_score_label.setText(
+                f"General score: {self.server.get_general_score(self.player_name)}")
+            self.server.reset_after_left(self.player_name)
 
         if match_status == MatchStatus.ONGOING and not self.made_move:
+            print("[POLL GAME STATUS]: Match is ongoing - move not made yet")
             self.reset_game_state()
             self.gui.enable_buttons()
+            self.gui.playing_against_label.setText(
+                f"Playing against: {self.server.get_opponent_name(self.player_name)}")
         if match_status == MatchStatus.OVER:
             print("Match is over")
             self.made_move = False
@@ -151,10 +205,12 @@ class GameClient:
         self.gui.move_label.clear()
         self.gui.result_label.clear()
         self.made_move = False
+        self.series_over = False
         self.polling_timer.start(self.POLLING_INTERVAL * 1000)
         self.rematch_polling_timer.stop()
         if new_match:
             self.gui.score_label.clear()
+            self.gui.playing_against_label.clear()
 
     def handle_close_event(self, event):
         """
@@ -168,7 +224,7 @@ class GameClient:
         if reply == QMessageBox.StandardButton.Yes:
             # Unregister the player before closing the window
             print(f"Unregistering player {self.player_name}...")
-            #self.server.unregister_player(self.player_name)
+            self.server.unregister_player(self.player_name)
             event.accept()
         else:
             event.ignore()
@@ -188,6 +244,7 @@ def main():
 
     player_name = f'Player {random.randint(1, 100)}'
     game_id = game_server.register_player(player_name)
+    # TODO aggiungere che non ci si puo' chiamare None
     '''
     while True:
         player_name, ok = QInputDialog.getText(QtWidgets.QWidget(), "Player Registration", "Enter player name:")

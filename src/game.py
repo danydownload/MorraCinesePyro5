@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from enums import Move, Result, MatchStatus
 
-BEST_OF_FIVE = 3
+BEST_OF_FIVE = 5
 
 
 class Game:
@@ -55,13 +55,13 @@ class Game:
         Returns:
             bool: True se la mossa è stata registrata con successo, False altrimenti.
         """
-        #print player_name, choice and self.moves.values()
+        # print player_name, choice and self.moves.values()
         print(f'player_name: {player_name}, choice: {choice}')
         print(f'players: {self.players}')
         print(f'moves: {self.moves}')
 
         if all(move is None for move in self.moves.values()):
-            #print("(None, None) in self.moves.values()")
+            # print("(None, None) in self.moves.values()")
             self.match_status = MatchStatus.ONGOING
 
         if player_name in self.players and self.moves[player_name] is None:
@@ -87,11 +87,11 @@ class Game:
         Determina il vincitore della partita in base alle mosse dei giocatori.
         """
 
-        #print(f'Determining winner...')
+        # print(f'Determining winner...')
 
         move_1, move_2 = self.moves.values()
 
-        #print(f'Move 1: {move_1} - Move 2: {move_2}')
+        # print(f'Move 1: {move_1} - Move 2: {move_2}')
 
         if move_1 == move_2:
             self.results[self.players[0]] = "Draw"
@@ -109,7 +109,6 @@ class Game:
         """
         Resetta lo stato della partita dopo una singola partita.
         """
-
 
         self.ready_to_play_again += 1
         self.moves[player_name] = None
@@ -151,11 +150,10 @@ class Game:
         if self.rematch_counter == 2:
             print(f'Entrambi i giocatori hanno richiesto un rematch.')
             print(f'Inizio una nuova partita.')
-            #print('Mosse resettate: ', self.moves)
+            # print('Mosse resettate: ', self.moves)
             self.match_status = MatchStatus.REMATCH
             self.rematch_counter = 0
             self.winner = None
-
 
     def request_new_match(self, player_name):
         self.moves[player_name] = None
@@ -169,7 +167,11 @@ class Game:
         self.winner = None
         self.match_status = MatchStatus.NONE
 
-
+    def reset_after_left(self, player_name):
+        self.moves[player_name] = None
+        self.results[player_name] = None
+        self.scores[player_name] = 0
+        self.winner = None
 
     def get_score(self, player_name):
         """
@@ -205,4 +207,28 @@ class Game:
 
     def get_num_of_match(self):
         return self.game_series
+
+    def get_opponent_name(self, player_name):
+        if len(self.players) == 1:
+            return None
+        else:
+            if player_name == self.players[0]:
+                return self.players[1]
+            elif player_name == self.players[1]:
+                return self.players[0]
+
+
+
+    def remove_player(self, player_name):
+        self.players.remove(player_name)
+        self.moves.pop(player_name)
+        self.results.pop(player_name)
+        self.scores.pop(player_name)
+        self.match_status = MatchStatus.LEFT
+        for player in self.players:
+            if player != player_name:
+                if self.winner is None:
+                    self.winner = player
+
+        print(f'player {player_name} ha abbandonato la partita.')
 
