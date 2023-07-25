@@ -11,6 +11,7 @@ MARGIN = 50
 WINDOW_WIDTH = 250
 WINDOW_HEIGHT = 250
 WINDOW_TITLE = "Morra Cinese"
+TIME_TO_MOVE = 10  # Time to make a move in seconds
 
 
 class GameClient:
@@ -39,8 +40,10 @@ class GameClient:
         self.rematch_polling_timer.timeout.connect(self.poll_match_status)
 
         self.gui.closeEvent = self.handle_close_event
-        # Connect the custom signal close_game to the unregister_player function
-        self.gui.close_game.connect(self.unregister_player)
+
+        # Set the timer for the time to make a move
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.unregister_player)
 
     def make_choice(self):
         print("Making choice...")
@@ -54,6 +57,8 @@ class GameClient:
             self.server.make_choice(self.player_name, choice)
             self.made_move = True
             self.gui.move_label.setText(f"Your move: {choice}")
+            print("Stopping timer...")
+            self.timer.stop()
 
             for button in self.gui.buttons:
                 button.setEnabled(False)
@@ -112,7 +117,10 @@ class GameClient:
             self.server.reset_after_left(self.player_name)
 
         if match_status == MatchStatus.ONGOING and not self.made_move:
-            print("[POLL GAME STATE]: Match is ongoing - move not made yet")
+            if not self.timer.isActive():
+                print("Starting timer...")
+                self.timer.start(TIME_TO_MOVE * 1000)
+            # print("[POLL GAME STATE]: Match is ongoing - move not made yet")
             self.gui.enable_buttons()
             self.gui.disable_list_of_buttons(self.gui.rematch_button, self.gui.new_match_button)
             self.gui.playing_against_label.setText(
@@ -163,7 +171,7 @@ class GameClient:
 
         if match_status == MatchStatus.ONGOING and not self.made_move:
             print("[POLL GAME STATUS]: Match is ongoing - move not made yet")
-            self.reset_game_state()
+            self.reset_game_state(new_match=True)
             self.gui.enable_buttons()
             self.gui.playing_against_label.setText(
                 f"Playing against: {self.server.get_opponent_name(self.player_name)}")
@@ -211,6 +219,7 @@ class GameClient:
         if new_match:
             self.gui.score_label.clear()
             self.gui.playing_against_label.clear()
+            self.gui.score_label.setText(f"Score of the series: {self.server.get_score(self.player_name)}")
 
     def handle_close_event(self, event):
         """
@@ -230,11 +239,8 @@ class GameClient:
             event.ignore()
 
     def unregister_player(self):
-        """
-        Function to unregister the player when the game window is closing.
-        """
-        print(f"[gameclient] Unregistering player {self.player_name}...")
-        # self.server.unregister_player(self.player_name)
+        print(f"Unregistering player {self.player_name}...")
+        self.server.unregister_player(self.player_name)
 
 
 def main():
@@ -242,12 +248,17 @@ def main():
 
     game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
 
-    player_name = f'Player {random.randint(1, 100)}'
-    game_id = game_server.register_player(player_name)
-    # TODO aggiungere che non ci si puo' chiamare None
-    '''
+    # player_name = f'Player {random.randint(1, 100)}'
+    # game_id = game_server.register_player(player_name)
+
     while True:
         player_name, ok = QInputDialog.getText(QtWidgets.QWidget(), "Player Registration", "Enter player name:")
+        if not ok:
+            print("Player registration cancelled.")
+            sys.exit()
+        if player_name == "" or player_name.upper().strip() == "NONE" or player_name.isspace():
+            QMessageBox.critical(None, "Registration Error", "Player name cannot be empty or None or whitespace.")
+            continue
         if ok and player_name:
             try:
                 game_id = game_server.register_player(player_name)
@@ -257,7 +268,6 @@ def main():
         else:
             print("Player registration cancelled.")
             sys.exit()
-    '''
 
     screen_resolution = QtGui.QGuiApplication.primaryScreen().availableGeometry()
 
