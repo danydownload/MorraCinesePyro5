@@ -40,3 +40,13 @@ The game is implemented as a `Game` class and `GameClient` class, where each ins
 
 ```bash
 pip install pyqt6 pyro5
+
+## Documentation
+To build the javadoc documentation:
+
+```bash
+pip install sphinx sphinx_rtd_theme
+cd docs
+make html
+
+
