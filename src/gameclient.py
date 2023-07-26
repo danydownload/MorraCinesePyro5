@@ -188,8 +188,11 @@ class GameClient:
         # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
         match_status = MatchStatus(match_status)
 
-        # print(f'match_status: {match_status}')
+        print(f'match_status: {match_status}')
         # print(f'made_move: {self.made_move}')
+
+        if match_status == MatchStatus.NONE:
+            self.gui.rematch_button.setEnabled(False)
 
         if match_status == MatchStatus.LEFT:
             self.gui.disable_buttons()
