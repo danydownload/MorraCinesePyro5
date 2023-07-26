@@ -1,6 +1,8 @@
+# game.py
+
 from collections import defaultdict
 
-from enums import Move, Result, MatchStatus
+from src.enums import Move, Result, MatchStatus
 
 BEST_OF_FIVE = 5
 

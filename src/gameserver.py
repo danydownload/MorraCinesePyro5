@@ -1,8 +1,9 @@
+# gameserver.py
+
 import Pyro5.api
 from collections import defaultdict
-from game import Game
-from enums import Move, Result, MatchStatus
-
+from src.game import Game
+from src.enums import Move, Result, MatchStatus
 
 @Pyro5.api.expose
 class GameServer(object):
@@ -186,8 +187,6 @@ class GameServer(object):
             print(f"Partita {game_id} rimossa.")
             print(f"Partite attive: {self.games}")
 
-        # printa i giocatori e a che partita sono registrati
-        # print(f"players_game: {self.players_game}")
         # ordina self.players_game per game_id
         self.players_game = {k: v for k, v in sorted(self.players_game.items(), key=lambda item: item[1])}
         print(f"players_game: {self.players_game}")

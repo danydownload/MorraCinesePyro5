@@ -1,3 +1,5 @@
+# gamegui.py
+
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 

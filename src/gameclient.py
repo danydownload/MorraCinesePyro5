@@ -1,11 +1,13 @@
+# gameclient.py
+
 import Pyro5.api
 import sys
 from PyQt6 import QtWidgets, QtGui
 from PyQt6.QtWidgets import QApplication, QMessageBox, QInputDialog
 from PyQt6.QtCore import QTimer
 import random
-from gamegui import GameGUI
-from enums import Move, Result, MatchStatus
+from src.gamegui import GameGUI
+from src.enums import Move, Result, MatchStatus
 
 MARGIN = 50
 WINDOW_WIDTH = 260
