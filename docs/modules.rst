@@ -4,5 +4,8 @@ src
 .. toctree::
    :maxdepth: 4
 
-   Client
-   Server
+   enums
+   gameserver
+   game
+   gameclient
+   gamegui
