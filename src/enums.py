@@ -3,23 +3,34 @@
 from enum import Enum
 
 
-# Enum per le mosse
+# Enum for moves
 class Move(Enum):
-    ROCK = "rock"
-    PAPER = "paper"
-    SCISSORS = "scissors"
+    """
+    Enum class representing the different moves in a Rock Paper Scissors game.
+    """
+    ROCK = "rock"  # Represents the Rock move
+    PAPER = "paper"  # Represents the Paper move
+    SCISSORS = "scissors"  # Represents the Scissors move
 
 
-# Enum per i risultati
+# Enum for results
 class Result(Enum):
-    WIN = "Winner"
-    LOSE = "Loser"
-    DRAW = "Draw"
+    """
+    Enum class representing the possible results of a single match in a Rock Paper Scissors game.
+    """
+    WIN = "Winner"  # Represents a win
+    LOSE = "Loser"  # Represents a loss
+    DRAW = "Draw"  # Represents a draw
 
 
-# Enum per lo stato della partita
+# Enum for match status
 class MatchStatus(Enum):
-    REMATCH = "REMATCH"
-    OVER = "OVER"
-    ONGOING = "ONGOING"
-    SERIES_OVER = "SERIES_OVER"
+    """
+    Enum class representing the various possible states of a Rock Paper Scissors match.
+    """
+    REMATCH = "REMATCH"  # Indicates that a rematch is requested
+    OVER = "OVER"  # Indicates that the match is over
+    ONGOING = "ONGOING"  # Indicates that the match is ongoing
+    SERIES_OVER = "SERIES_OVER"  # Indicates that the series of matches is over
+    NONE = "NONE"  # Indicates that no match is in progress
+    LEFT = "LEFT"  # Indicates that a player has left the game

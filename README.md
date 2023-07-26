@@ -1,105 +1,42 @@
-# Morra Cinese con Pyro5
+# Rock-Paper-Scissors Game
 
-Questo progetto implementa una semplice versione di Morra Cinese (Rock, Paper, Scissors) utilizzando Pyro5 per la comunicazione tra client e server. Il progetto è costituito da due file principali: `server.py` e `client.py`.
+This project is a Python-based implementation of the classic game, Rock-Paper-Scissors with a graphical user interface. Players can compete against each other in a series of matches with the final winner being the player who wins the best of five games. The game can be played in a distributed system using Pyro5 for remote method invocation.
 
-## Funzionalità del Codice
+## Features
 
-### Server.py
-Il server gestisce l'intero stato del gioco. Le funzionalità principali includono:
+- Support for multiple rounds within a single game series.
+- Player's choices and scores are stored and managed for each round.
+- The game supports rematch functionality.
+- The game keeps track of the overall series winner.
+- Exception handling to manage already registered players and full game scenarios.
+- GUI for easier interaction and better user experience.
+- Pyro5 is used to support remote method invocation for a distributed system environment.
 
-- Gestione delle partite, dei giocatori, delle mosse, dei risultati e delle richieste di rematch.
-- Mantenimento dello storico dei punteggi dei giocatori.
+## How to Use
 
-#### Metodi Principali
+The game is implemented as a `Game` class and `GameClient` class, where each instance represents a separate game or match series. You can use the following methods to interact with the game:
 
-- `register(name)`: Registra un nuovo giocatore per una partita.
-- `make_choice(game_id, player, choice)`: Consente a un giocatore di fare una mossa.
-- `determine_winner(game_id)`: Determina il vincitore di una partita.
-- `get_game_state(game_id, player)`: Ritorna lo stato attuale della partita per un determinato giocatore.
-- `rematch(game_id, player_name)`: Gestisce le richieste di rematch.
-- `get_rematch_status(game_id)`: Ritorna lo stato attuale della richiesta di rematch.
-- `get_score(player_name)`: Ritorna il punteggio attuale di un giocatore.
+- `register_player(player_name)`: To register a new player to the game.
+- `make_choice(player_name, choice)`: To make a choice for a player. Choice must be one of 'rock', 'paper', or 'scissors'.
+- `get_game_state(player_name)`: To get the current state of a player within a game.
+- `request_rematch(player_name)`: To request a rematch by a player.
+- `request_new_match(player_name)`: To request a new match by a player.
+- `get_score(player_name)`: To get the current score of a player.
+- `get_player_state(player_name)`: To get the current state of a player within a game.
+- `get_match_status()`: To get the current status of the match.
+- `get_winner_of_series()`: To get the winner of the series.
+- `get_num_of_match()`: To get the number of matches played in the series.
+- `get_opponent_name(player_name)`: To get the name of the opponent for a given player.
+- `remove_player(player_name)`: To remove a player from the game.
 
-### Client.py
-Il client crea un'interfaccia utente per il gioco, permettendo ai giocatori di interagire con il server.
+## Requirements
 
-#### Funzionalità Principali
+- Python 3.x
+- Python's built-in `collections` library
+- PyQt6 for the GUI
+- Pyro5 for remote method invocation
 
-- Permette ai giocatori di fare una mossa e mostra il risultato della partita.
-- Permette ai giocatori di richiedere un rematch alla fine di una partita.
-- Mostra lo stato attuale della partita e il punteggio dei giocatori.
+## Installation
 
-## Installazione e Utilizzo
-
-1. Assicurati di avere installato Python e Pyro5 sul tuo computer.
-2. Clona o scarica questo repository.
-3. Esegui `server.py` per avviare il server di gioco.
-4. Esegui `client.py` per ogni giocatore che vuole unirsi al gioco.
-5. Segui le istruzioni visualizzate sull'interfaccia del client per giocare.
-
-## Dipendenze
-
-- Python 3.8+
-- Pyro5
-- PyQt5
-
-Nota: Assicurati di installare tutte le dipendenze prima di eseguire il codice. Puoi installare le dipendenze con il seguente comando:
-
-```shell
-pip install pyro5 pyqt5
-```
-
-## Struttura del Codice
-
-### Server.py
-```python
-import Pyro5.api
-
-@Pyro5.api.expose
-class GameServer(object):
-    def __init__(self):
-        # Initialize game state
-
-    def register(self, name):
-        # Register a new player for a game
-
-    def make_choice(self, game_id, player, choice):
-        # Allow a player to make a move
-
-    def determine_winner(self, game_id):
-        # Determine the winner of a game
-
-    def get_game_state(self, game_id, player):
-        # Return the current state of the game for a certain player
-
-    def rematch(self, game_id, player_name):
-        # Handle rematch requests
-
-    def get_rematch_status(self, game_id):
-        # Return the current state of the rematch request
-
-    def get_score(self, player_name):
-        # Return the current score of a player
-```
-
-### Client.py
-```python
-import Pyro5.api
-
-class GameClient(object):
-    def __init__(self):
-        # Initialize client state
-
-    def make_choice(self):
-        # Let the player make a move
-
-    def request_rematch(self):
-        # Let the player request a rematch
-
-    def get_game_state(self):
-        # Show the current state of the game
-
-    def get_score(self):
-        # Show the current score of the player
-```
-
+```bash
+pip install pyqt6 pyro5
