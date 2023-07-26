@@ -3,9 +3,18 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 
 
 class GameGUI(QWidget):
+    """
+    Class representing the Graphical User Interface (GUI) for the Rock Paper Scissors game.
+    """
     close_game = pyqtSignal()
 
     def __init__(self, player_name):
+        """
+        Constructor for the GameGUI class.
+
+        Args:
+            player_name (str): The name of the player.
+        """
         super(GameGUI, self).__init__()
 
         self.player_name = player_name
@@ -56,11 +65,24 @@ class GameGUI(QWidget):
         self.general_score_label.setText("General score: 0")
 
     def show_game_state(self, game):
+        """
+        Updates the GUI to reflect the current state of the game.
+
+        Args:
+            game (Game): The current game state.
+        """
         self.result_label.setText(game.result)
         self.move_label.setText(game.move)
         self.score_label.setText(game.score)
 
     def show_winner(self, winner, winner_of_series):
+        """
+        Updates the GUI to show the winner of a game or series.
+
+        Args:
+            winner (str): The name of the winner of the game.
+            winner_of_series (str): The name of the winner of the series.
+        """
         if not winner_of_series:
             if winner == "Draw":
                 self.result_label.setText("It's a draw.")
@@ -80,19 +102,37 @@ class GameGUI(QWidget):
                     self.result_label.setText("You lost the series!")
 
     def enable_buttons(self):
+        """
+        Enables all the move choice buttons on the GUI.
+        """
         for btn in self.buttons:
             btn.setEnabled(True)
 
     def disable_buttons(self):
+        """
+        Disables all the move choice buttons on the GUI.
+        """
         for btn in self.buttons:
             btn.setEnabled(False)
 
     def disable_list_of_buttons(self, *buttons):
+        """
+        Disables a list of buttons.
+
+        Args:
+            *buttons (QPushButton): The buttons to be disabled.
+        """
         for btn in buttons:
             btn.setEnabled(False)
 
     # general function that clear all the labels passed as input
     def clear_labels(self, *labels):
+        """
+        Clears the text of all specified labels.
+
+        Args:
+            *labels (QLabel): The labels to be cleared.
+        """
         for label in labels:
             label.clear()
 

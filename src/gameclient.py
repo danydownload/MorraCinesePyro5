@@ -11,14 +11,37 @@ MARGIN = 50
 WINDOW_WIDTH = 250
 WINDOW_HEIGHT = 250
 WINDOW_TITLE = "Morra Cinese"
-TIME_TO_MOVE = 10  # Time to make a move in seconds
+TIME_TO_MOVE = 120  # Time to make a move in seconds
 
 
 class GameClient:
+    """
+    The GameClient class handles the client-side interactions of the game. It manages the user interface, player moves,
+    game state polling, match status, and player unregistration. The client communicates with the game server,
+    manages the game GUI, processes player choices, and handles rematch and new match requests.
+
+    Attributes:
+        server (Pyro5.api.Proxy): The game server object that the client interacts with.
+        player_name (str): The player's name.
+        game_id (int): Unique identifier for the game. Initially, this is set to None.
+        made_move (bool): Flag to track if the client has made a move. Initially, this is set to False.
+        series_over (bool): Flag to track if the match has ended. Initially, this is set to False.
+        gui (GameGUI): The GUI object for the game.
+        polling_timer (QTimer): Timer object to periodically check the game state.
+        rematch_polling_timer (QTimer): Timer object to periodically check the match status.
+        timer (QTimer): Timer object to manage the time allotted for a player to make a move.
+    """
     POLLING_INTERVAL = 1  # Polling interval in seconds
     REMATCH_POLLING_INTERVAL = 1  # Polling interval in seconds for rematch state
 
-    def __init__(self, player_name, server, position):
+    def __init__(self, player_name, server):
+        """
+        Initialize the GameClient with a player's name, the server object, and a position for the game window.
+
+        Args:
+            player_name (str): The name of the player.
+            server (Pyro5.api.Proxy): The game server object.
+        """
         self.player_name = player_name
         self.server = server
         self.game_id = None
@@ -46,6 +69,9 @@ class GameClient:
         self.timer.timeout.connect(self.unregister_player)
 
     def make_choice(self):
+        """
+        Function to make a move in the game.
+        """
         print("Making choice...")
         if not self.made_move:
             print("Choice made...")
@@ -64,6 +90,13 @@ class GameClient:
                 button.setEnabled(False)
 
     def show_winner(self, winner, winner_of_series=None):
+        """
+        Function to show the winner of the game.
+
+        Args:
+            winner (str): The name of the player who won.
+            winner_of_series (str): The name of the player who won the series (optional).
+        """
         print("Showing winner...")
 
         if winner_of_series is not None:
@@ -84,10 +117,16 @@ class GameClient:
             self.made_move = False
 
     def update_score(self):
+        """
+        Function to update the score of the current game series.
+        """
         score = self.server.get_score(self.player_name)
         self.gui.score_label.setText(f"Score of the series: {score}")
 
     def poll_game_state(self):
+        """
+        Function to poll the game state from the server and update the GUI.
+        """
         game_state = self.server.get_game_state(self.player_name)
         match_status = MatchStatus(self.server.get_match_status(self.player_name))
         winner_of_series = self.server.get_winner_of_series(self.player_name)
@@ -141,6 +180,9 @@ class GameClient:
             #         f"General score: {self.server.get_general_score(self.player_name)}")
 
     def poll_match_status(self):
+        """
+        Function to poll the match status from the server and update the GUI.
+        """
         match_status = self.server.get_match_status(self.player_name)
         # match_status e' una stringa invece che un MatchStatus.
         # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
@@ -186,6 +228,9 @@ class GameClient:
             self.gui.rematch_button.setEnabled(False)
 
     def request_rematch(self):
+        """
+        Function to request a rematch at the end of the game series.
+        """
         print("Requesting rematch...")
         reply = QMessageBox.question(self.gui, "Rematch", "Do you want to request a rematch?",
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
@@ -197,6 +242,9 @@ class GameClient:
                 self.made_move = False
 
     def request_new_match(self):
+        """
+         Function to request a new match.
+         """
         print("Requesting new match...")
         reply = QMessageBox.question(self.gui, "New match", "Do you want to request a new match?")
         if reply == QMessageBox.StandardButton.Yes:
@@ -206,6 +254,12 @@ class GameClient:
             self.made_move = False
 
     def reset_game_state(self, new_match=False):
+        """
+        Function to reset the game state in preparation for a new match or rematch.
+
+        Args:
+            new_match (bool): Flag to indicate if this is a new match.
+        """
         print("Resetting game state...")
         num_of_match = self.server.get_num_of_match(self.player_name)
         self.gui.num_of_matches_label.setText(f"Match {num_of_match} of 5")
@@ -239,11 +293,17 @@ class GameClient:
             event.ignore()
 
     def unregister_player(self):
+        """
+        Function to unregister the player from the server.
+        """
         print(f"Unregistering player {self.player_name}...")
         self.server.unregister_player(self.player_name)
 
 
 def main():
+    """
+    Main function to start the application.
+    """
     app = QApplication([])
 
     game_server = Pyro5.api.Proxy("PYRO:MorraCinese.game@localhost:55894")
@@ -278,7 +338,7 @@ def main():
     y_range = (MARGIN, screen_height - WINDOW_HEIGHT - MARGIN)
     position = (random.randint(*x_range), random.randint(*y_range))
 
-    client = GameClient(player_name, game_server, position)
+    client = GameClient(player_name, game_server)
     client.game_id = game_id
     client.gui.setGeometry(*position, WINDOW_WIDTH, WINDOW_HEIGHT)  # Imposta le dimensioni della finestra
     client.gui.setWindowTitle(f"{WINDOW_TITLE} - {player_name}")
