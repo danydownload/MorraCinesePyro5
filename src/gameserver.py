@@ -83,8 +83,7 @@ class GameServer(object):
             player_name (str): The name of the player.
         """
         if player_name in self.players_game:
-            raise ValueError(f'È già presente un giocatore con il nome {player_name}. Perfavore scegli un altro nome.')
-
+            raise ValueError(f'Player with name {player_name} already exists. Please choose another name.')
         self.players_score[player_name] = 0
 
         self.add_player_to_game(player_name)
