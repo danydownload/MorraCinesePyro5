@@ -197,11 +197,12 @@ class Game:
         Notes:
             The game's status is updated to none.
         """
-        self.moves[player_name] = None
+        for player in self.players:
+            self.moves[player] = None
+            self.results[player] = None
+            self.scores[player] = 0
         self.moves.pop(player_name)
-        self.results[player_name] = None
         self.scores.pop(player_name)
-        self.scores[player_name] = 0
         self.results.pop(player_name)
 
         self.players.remove(player_name)
