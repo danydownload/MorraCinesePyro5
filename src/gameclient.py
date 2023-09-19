@@ -112,7 +112,7 @@ class GameClient:
 
         self.update_score()
 
-        # solo se lo stato della partita e' REMATCH, allora abilito il pulsante per il rematch
+        # only if the state of the match is REMATCH, then enable the rematch button
         if MatchStatus(self.server.get_match_status(self.player_name)) == MatchStatus.SERIES_OVER:
             self.gui.rematch_button.setEnabled(True)  # Enable the rematch button
             self.gui.new_match_button.setEnabled(True)  # Enable the new match button
@@ -186,8 +186,8 @@ class GameClient:
         Function to poll the match status from the server and update the GUI.
         """
         match_status = self.server.get_match_status(self.player_name)
-        # match_status e' una stringa invece che un MatchStatus.
-        # Questo e' un workaround perche' Pyro non riesce a serializzare l'enum MatchStatus
+        # match_status is a string instead of a MatchStatus enum.
+        # this is a workaround because Pyro cannot serialize the MatchStatus enum
         match_status = MatchStatus(match_status)
 
         print(f'match_status: {match_status}')
@@ -231,6 +231,7 @@ class GameClient:
             self.reset_game_state()
             self.update_score()
             self.gui.rematch_button.setEnabled(False)
+            self.gui.new_match_button.setEnabled(False)
 
     def request_rematch(self):
         """
@@ -326,7 +327,7 @@ def main():
             continue
         if ok and player_name:
             try:
-                game_id = game_server.register_player(player_name)
+                game_server.register_player(player_name)
                 break
             except ValueError as e:
                 QMessageBox.critical(None, "Registration Error", str(e))
@@ -344,8 +345,9 @@ def main():
     position = (random.randint(*x_range), random.randint(*y_range))
 
     client = GameClient(player_name, game_server)
-    client.game_id = game_id
-    client.gui.setGeometry(*position, WINDOW_WIDTH, WINDOW_HEIGHT)  # Imposta le dimensioni della finestra
+    #game_id = None
+    #client.game_id = game_id
+    client.gui.setGeometry(*position, WINDOW_WIDTH, WINDOW_HEIGHT)
     client.gui.setWindowTitle(f"{WINDOW_TITLE} - {player_name}")
     client.gui.show()
 

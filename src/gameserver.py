@@ -5,6 +5,7 @@ from collections import defaultdict
 from src.game import Game
 from src.enums import Move, Result, MatchStatus
 
+
 @Pyro5.api.expose
 class GameServer(object):
     """
@@ -187,11 +188,11 @@ class GameServer(object):
             print(f"Partita {game_id} rimossa.")
             print(f"Partite attive: {self.games}")
 
-        # ordina self.players_game per game_id
+        # sort self.players_game by game_id
         self.players_game = {k: v for k, v in sorted(self.players_game.items(), key=lambda item: item[1])}
         print(f"players_game: {self.players_game}")
 
-        # ora printa il player in questione e a che partita e' registrato
+        # it prints the player and the game he's registered to
         print(f"player_name: {player_name}, registered to game: {self.players_game[player_name]}")
 
     def get_match_status(self, player_name):
@@ -330,7 +331,7 @@ class GameServer(object):
         del self.players_game[player_name]
         print(f"Giocatore {player_name} rimosso dalla partita.")
         print(f"players_game: {self.players_game}")
-        if len(game.players) == 0:  # se nel game non ci sono piu' giocatori, rimuovi il game
+        if len(game.players) == 0:  # if there are no more players in the game, remove the game
             del self.games[str(game_id)]
             print(f"Partita {game_id} rimossa.")
             print(f"Partite attive: {self.games}")
@@ -353,7 +354,7 @@ def main():
     """
     daemon = Pyro5.api.Daemon()
 
-    game_server = GameServer()  # Creazione di una singola istanza del server
+    game_server = GameServer()
 
     Pyro5.api.Daemon.serveSimple(
         {
