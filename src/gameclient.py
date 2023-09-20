@@ -174,7 +174,6 @@ class GameClient:
         if match_status == MatchStatus.SERIES_OVER:
             self.show_winner(game_state, winner_of_series)
             self.server.get_general_score(self.player_name)
-            # TODO check if this is correct
             self.series_over = True
             # if not self.series_over:
             #     self.server.update_general_score(self.player_name)
